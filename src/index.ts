@@ -14,6 +14,8 @@ import { getMalformedUserAgent, getUserAgent } from "./main/userAgent";
 import { SessionManager } from "./main/managers/SessionManager";
 import { runAutoUpdate } from "./autoUpdate";
 import { getSavedBounds, saveWindowBounds } from "./bounds";
+import { ElectronBlocker } from "@ghostery/adblocker-electron";
+import fetch from "cross-fetch";
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -133,6 +135,10 @@ if (!hasSingleInstanceLock) {
         );
       });
     }
+
+    ElectronBlocker.fromPrebuiltAdsAndTracking(fetch).then((blocker) => {
+      blocker.enableBlockingInSession(session.defaultSession);
+    });
   });
 
   app.on("second-instance", () => {
