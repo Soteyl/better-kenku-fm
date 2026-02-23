@@ -13,6 +13,34 @@ This repository is a fork of Kenku FM with additional features and release autom
   - Downloads audio for playlist usage via optional bundled tools.
   - Uses per-platform tool resolution with checksum verification.
 
+## YouTube Import Tools
+
+Exact tools currently used by this fork:
+
+- `yt-dlp` `2026.02.21` for YouTube audio extraction.
+- `ffmpeg` support is wired in the optional tool system path and manifest model for conversion flows.
+- Tool binaries are downloaded on demand per platform and stored in app data (not global PATH).
+
+Manifest used for tool versions/checksums:
+
+- `https://github.com/Soteyl/better-kenku-fm/releases/download/tool-manifest/tools-manifest.json`
+
+## Launch On macOS
+
+Build and run locally:
+
+```bash
+yarn make
+open "out/Kenku FM-darwin-arm64/Kenku FM.app"
+```
+
+If macOS blocks a downloaded app with a Gatekeeper quarantine warning:
+
+```bash
+xattr -dr com.apple.quarantine "out/Kenku FM-darwin-arm64/Kenku FM.app"
+open "out/Kenku FM-darwin-arm64/Kenku FM.app"
+```
+
 ## Notes
 
 - macOS public distribution still requires proper Apple Developer signing and notarization.
