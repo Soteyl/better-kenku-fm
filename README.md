@@ -1,5 +1,30 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
+# Better Kenku FM (Fork)
+
+This repository is a fork of Kenku FM with additional features and release automation.
+
+## Key Differences From Upstream
+
+- Built-in ad/tracker blocking for browser playback views.
+- Bookmarks add button fix and bookmarks interaction stability improvements.
+- Playlist YouTube URL import flow:
+  - Detects YouTube links in track add UI.
+  - Downloads audio for playlist usage via optional bundled tools.
+  - Uses per-platform tool resolution with checksum verification.
+- Remote tool manifest support from GitHub Releases:
+  - Tool versions can be updated without shipping a new app build.
+  - Cached manifest fallback and built-in pinned fallback versions.
+- Fork release workflow:
+  - Tag format: `v<kenku_version>.f<forkVersionNumber>` (example: `v1.5.4.f3`).
+  - On tag push, creates `release/<tag>` branch from `main`.
+  - Builds and uploads multi-platform release assets plus `tools-manifest.json`.
+
+## Notes
+
+- macOS public distribution still requires proper Apple Developer signing and notarization.
+- The original upstream project README begins below.
+
 # Kenku FM
 
 Kenku FM is a desktop application for Windows, MacOS and Linux designed to be the easiest way to share music in a Discord voice call.
