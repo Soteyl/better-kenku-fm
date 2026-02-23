@@ -48,6 +48,21 @@ To make a production build run:
 
 `yarn make`
 
+### Optional Tool Manifest (GitHub Releases)
+
+YouTube playlist import can download platform-specific tools on demand.
+
+- Default manifest URL:
+  - `https://github.com/Soteyl/better-kenku-fm/releases/download/tool-manifest/tools-manifest.json`
+- Environment variable overrides:
+  - `KENKU_TOOL_MANIFEST_GH_OWNER`
+  - `KENKU_TOOL_MANIFEST_GH_REPO`
+  - `KENKU_TOOL_MANIFEST_GH_TAG`
+  - `KENKU_TOOL_MANIFEST_ASSET`
+  - `KENKU_TOOL_MANIFEST_PUBLIC_KEY_PEM` (optional signature verification)
+- Example manifest payload:
+  - `docs/tools-manifest.example.json`
+
 If you wish to add protected media playback support follow the build steps from the [Electron for Content Security](https://github.com/castlabs/electron-releases) repo.
 
 ## Stream Deck

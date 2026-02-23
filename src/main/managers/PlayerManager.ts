@@ -1,6 +1,10 @@
 import { ipcMain, BrowserWindow, webContents } from "electron";
 import Fastify, { FastifyInstance } from "fastify";
 import { registerRemote } from "../remote";
+import {
+  OptionalToolManager,
+  ResolvedTrackSource,
+} from "./OptionalToolManager";
 
 declare const PLAYER_WINDOW_WEBPACK_ENTRY: string;
 declare const PLAYER_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -10,6 +14,7 @@ export class PlayerManager {
   fastify: FastifyInstance | null = null;
   address = "127.0.0.1";
   port = "3333";
+  toolManager = new OptionalToolManager();
 
   constructor() {
     ipcMain.on("PLAYER_GET_URL", this._handleGetURL);
@@ -17,6 +22,7 @@ export class PlayerManager {
     ipcMain.on("PLAYER_REGISTER_VIEW", this._handleRegisterView);
     ipcMain.on("PLAYER_START_REMOTE", this._handleStartRemote);
     ipcMain.on("PLAYER_STOP_REMOTE", this._handleStopRemote);
+    ipcMain.handle("PLAYER_RESOLVE_TRACK_SOURCE", this._handleResolveTrackSource);
   }
 
   destroy() {
@@ -25,6 +31,7 @@ export class PlayerManager {
     ipcMain.off("PLAYER_REGISTER_VIEW", this._handleRegisterView);
     ipcMain.off("PLAYER_START_REMOTE", this._handleStartRemote);
     ipcMain.off("PLAYER_STOP_REMOTE", this._handleStopRemote);
+    ipcMain.removeHandler("PLAYER_RESOLVE_TRACK_SOURCE");
     this.stopRemote();
   }
 
@@ -93,5 +100,13 @@ export class PlayerManager {
 
   _handleRegisterView = (_: Electron.IpcMainEvent, viewId: number) => {
     this.registeredViewId = viewId;
+  };
+
+  _handleResolveTrackSource = async (
+    _: Electron.IpcMainInvokeEvent,
+    source: string,
+    playlistId: string,
+  ): Promise<ResolvedTrackSource> => {
+    return this.toolManager.resolveTrackSource(source, playlistId);
   };
 }
