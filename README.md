@@ -2,7 +2,7 @@
 
 # Better Kenku FM (Fork)
 
-This repository is a fork of Kenku FM with additional features and release automation.
+This repository is a fork of Kenku FM with additional features.
 
 ## Key Differences From Upstream
 
