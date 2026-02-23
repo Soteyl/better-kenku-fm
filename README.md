@@ -12,13 +12,6 @@ This repository is a fork of Kenku FM with additional features and release autom
   - Detects YouTube links in track add UI.
   - Downloads audio for playlist usage via optional bundled tools.
   - Uses per-platform tool resolution with checksum verification.
-- Remote tool manifest support from GitHub Releases:
-  - Tool versions can be updated without shipping a new app build.
-  - Cached manifest fallback and built-in pinned fallback versions.
-- Fork release workflow:
-  - Tag format: `v<kenku_version>.f<forkVersionNumber>` (example: `v1.5.4.f3`).
-  - On tag push, creates `release/<tag>` branch from `main`.
-  - Builds and uploads multi-platform release assets plus `tools-manifest.json`.
 
 ## Notes
 
