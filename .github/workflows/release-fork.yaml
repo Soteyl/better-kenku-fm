@@ -9,7 +9,35 @@ permissions:
   contents: write
 
 jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create release branch from main
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          RELEASE_BRANCH="release/${TAG}"
+
+          git fetch origin main
+
+          if git ls-remote --heads origin "${RELEASE_BRANCH}" | grep -q "${RELEASE_BRANCH}"; then
+            echo "Branch ${RELEASE_BRANCH} already exists, skipping."
+            exit 0
+          fi
+
+          MAIN_SHA=$(git rev-parse origin/main)
+          git branch "${RELEASE_BRANCH}" "${MAIN_SHA}"
+          git push origin "${RELEASE_BRANCH}"
+
   build-release:
+    needs: create-release-branch
     strategy:
       fail-fast: false
       matrix:
@@ -50,6 +78,7 @@ jobs:
             out/make/**/*.dmg
 
   publish-manifest:
+    needs: create-release-branch
     runs-on: ubuntu-latest
 
     steps:
