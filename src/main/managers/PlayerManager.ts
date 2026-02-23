@@ -4,6 +4,7 @@ import { registerRemote } from "../remote";
 import {
   OptionalToolManager,
   ResolvedTrackSource,
+  TrackSourceProgress,
 } from "./OptionalToolManager";
 
 declare const PLAYER_WINDOW_WEBPACK_ENTRY: string;
@@ -103,10 +104,21 @@ export class PlayerManager {
   };
 
   _handleResolveTrackSource = async (
-    _: Electron.IpcMainInvokeEvent,
+    event: Electron.IpcMainInvokeEvent,
     source: string,
     playlistId: string,
+    requestId: string,
   ): Promise<ResolvedTrackSource> => {
-    return this.toolManager.resolveTrackSource(source, playlistId);
+    return this.toolManager.resolveTrackSource(
+      source,
+      playlistId,
+      (progress: TrackSourceProgress) => {
+        event.sender.send(
+          "PLAYER_RESOLVE_TRACK_SOURCE_PROGRESS",
+          requestId,
+          progress,
+        );
+      },
+    );
   };
 }

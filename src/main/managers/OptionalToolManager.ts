@@ -55,6 +55,13 @@ export interface ResolvedTrackSource {
   localPath?: string;
 }
 
+export interface TrackSourceProgress {
+  stage: string;
+  message: string;
+  progress?: number;
+  details?: string;
+}
+
 const BUILTIN_TOOL_RELEASES: Record<
   ToolName,
   Partial<Record<PlatformKey, ToolRelease>>
@@ -150,21 +157,43 @@ export class OptionalToolManager {
   async resolveTrackSource(
     source: string,
     playlistId: string,
+    onProgress?: (progress: TrackSourceProgress) => void,
   ): Promise<ResolvedTrackSource> {
     const trimmed = source.trim();
     if (!isYoutubeURL(trimmed)) {
+      onProgress?.({
+        stage: "direct",
+        message: "Using direct source URL.",
+        progress: 100,
+      });
       return {
         sourceType: "direct",
         url: trimmed,
       };
     }
 
-    const ytDlpPath = await this.ensureToolInstalled("yt-dlp");
+    onProgress?.({
+      stage: "prepare",
+      message: "Preparing YouTube import pipeline...",
+      progress: 5,
+    });
+    const ytDlpPath = await this.ensureToolInstalled("yt-dlp", onProgress);
+    onProgress?.({
+      stage: "download",
+      message: "Starting YouTube audio download...",
+      progress: 30,
+    });
     const downloadResult = await this.downloadYoutubeAudio(
       ytDlpPath,
       trimmed,
       playlistId,
+      onProgress,
     );
+    onProgress?.({
+      stage: "complete",
+      message: "Audio import complete.",
+      progress: 100,
+    });
     return {
       sourceType: "youtube",
       title: downloadResult.title,
@@ -196,7 +225,10 @@ export class OptionalToolManager {
     return release;
   }
 
-  private async ensureToolInstalled(tool: ToolName): Promise<string> {
+  private async ensureToolInstalled(
+    tool: ToolName,
+    onProgress?: (progress: TrackSourceProgress) => void,
+  ): Promise<string> {
     const release = await this.getRelease(tool);
     const binaryPath = path.join(this.binDir, release.binaryName);
     const manifest = await this.readManifest();
@@ -209,6 +241,11 @@ export class OptionalToolManager {
       (await this.exists(binaryPath));
 
     if (validExistingInstall) {
+      onProgress?.({
+        stage: "tool-check",
+        message: `Verifying installed ${tool} ${release.version}...`,
+        progress: 12,
+      });
       const currentHash = await this.sha256(binaryPath);
       if (currentHash === release.sha256) {
         await fs.chmod(binaryPath, 0o755);
@@ -217,10 +254,20 @@ export class OptionalToolManager {
           lastVerifiedAt: new Date().toISOString(),
         };
         await this.writeManifest(manifest);
+        onProgress?.({
+          stage: "tool-ready",
+          message: `${tool} is ready.`,
+          progress: 22,
+        });
         return binaryPath;
       }
     }
 
+    onProgress?.({
+      stage: "tool-install",
+      message: `Installing ${tool} ${release.version}...`,
+      progress: 10,
+    });
     await fs.mkdir(this.binDir, { recursive: true });
     await fs.mkdir(this.tempDir, { recursive: true });
 
@@ -230,7 +277,17 @@ export class OptionalToolManager {
     );
 
     try {
+      onProgress?.({
+        stage: "tool-download",
+        message: `Downloading ${tool} binary...`,
+        progress: 14,
+      });
       await this.downloadToFile(release.url, tempPath);
+      onProgress?.({
+        stage: "tool-verify",
+        message: `Verifying ${tool} checksum...`,
+        progress: 20,
+      });
       await this.verifyReleaseIntegrity(tool, tempPath, release);
 
       await fs.chmod(tempPath, 0o755);
@@ -245,6 +302,11 @@ export class OptionalToolManager {
         lastVerifiedAt: new Date().toISOString(),
       };
       await this.writeManifest(manifest);
+      onProgress?.({
+        stage: "tool-ready",
+        message: `${tool} installed.`,
+        progress: 25,
+      });
       return binaryPath;
     } catch (error) {
       await fs.rm(tempPath, { force: true });
@@ -384,6 +446,7 @@ export class OptionalToolManager {
     ytDlpPath: string,
     sourceUrl: string,
     playlistId: string,
+    onProgress?: (progress: TrackSourceProgress) => void,
   ): Promise<{ title: string; filePath: string }> {
     const safePlaylistId =
       playlistId.replace(/[^a-zA-Z0-9-_]/g, "") || "default";
@@ -393,8 +456,11 @@ export class OptionalToolManager {
     const outputTemplate = "%(title).120B-%(id)s.%(ext)s";
     const args = [
       "--no-playlist",
-      "--no-progress",
       "--no-warnings",
+      "--newline",
+      "--progress",
+      "--progress-template",
+      "download:%(progress)j",
       "-f",
       "bestaudio[ext=m4a]/bestaudio",
       "-P",
@@ -408,7 +474,43 @@ export class OptionalToolManager {
       sourceUrl,
     ];
 
-    const { stdout, stderr, code } = await this.execBinary(ytDlpPath, args);
+    let lastMappedProgress = 30;
+    const handleProgressLine = (line: string) => {
+      const downloadProgress = this.parseYtDlpProgress(line);
+      if (downloadProgress !== null) {
+        const mapped = Math.max(
+          30,
+          Math.min(95, 30 + Math.round(downloadProgress * 0.65)),
+        );
+        if (mapped < lastMappedProgress) {
+          return;
+        }
+        lastMappedProgress = mapped;
+        onProgress?.({
+          stage: "download-audio",
+          message: `Downloading audio... ${downloadProgress.toFixed(1)}%`,
+          progress: lastMappedProgress,
+        });
+      } else {
+        onProgress?.({
+          stage: "download-audio",
+          message: "Downloading audio...",
+        });
+      }
+    };
+
+    const { stdout, stderr, code } = await this.execBinary(
+      ytDlpPath,
+      args,
+      handleProgressLine,
+      handleProgressLine,
+    );
+
+    onProgress?.({
+      stage: "download-complete",
+      message: "Download complete. Finalizing...",
+      progress: 93,
+    });
     if (code !== 0) {
       throw new Error(stderr || "Failed to download YouTube audio");
     }
@@ -424,12 +526,19 @@ export class OptionalToolManager {
     }
 
     const title = lines[0] || path.basename(filePath, path.extname(filePath));
+    onProgress?.({
+      stage: "finalize",
+      message: "Finalizing imported track...",
+      progress: 95,
+    });
     return { title, filePath };
   }
 
   private async execBinary(
     binaryPath: string,
     args: string[],
+    onStderrLine?: (line: string) => void,
+    onStdoutLine?: (line: string) => void,
   ): Promise<{ code: number; stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
       const proc = spawn(binaryPath, args, {
@@ -441,22 +550,143 @@ export class OptionalToolManager {
 
       let stdout = "";
       let stderr = "";
+      let stderrPartial = "";
+      let stdoutPartial = "";
 
       proc.stdout.on("data", (chunk: Buffer) => {
-        stdout += chunk.toString();
+        const text = chunk.toString();
+        stdout += text;
+        if (onStdoutLine) {
+          stdoutPartial += text.replace(/\r/g, "\n");
+          const lines = stdoutPartial.split("\n");
+          stdoutPartial = lines.pop() || "";
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.length > 0) {
+              onStdoutLine(trimmed);
+            }
+          }
+        }
       });
       proc.stderr.on("data", (chunk: Buffer) => {
-        stderr += chunk.toString();
+        const text = chunk.toString();
+        stderr += text;
+        if (onStderrLine) {
+          // yt-dlp frequently emits progress using carriage returns.
+          stderrPartial += text.replace(/\r/g, "\n");
+          const lines = stderrPartial.split("\n");
+          stderrPartial = lines.pop() || "";
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.length > 0) {
+              onStderrLine(trimmed);
+            }
+          }
+        }
       });
       proc.on("error", (err) => reject(err));
-      proc.on("close", (code) =>
+      proc.on("close", (code) => {
+        if (onStderrLine && stderrPartial.trim().length > 0) {
+          onStderrLine(stderrPartial.trim());
+        }
+        if (onStdoutLine && stdoutPartial.trim().length > 0) {
+          onStdoutLine(stdoutPartial.trim());
+        }
         resolve({
           code: code ?? 1,
           stdout,
           stderr,
-        }),
-      );
+        });
+      });
     });
+  }
+
+  private parseYtDlpProgress(line: string): number | null {
+    let jsonPayload: string | null = null;
+    const prefixed = line.match(/^download:(\{.*\})$/);
+    if (prefixed && prefixed[1]) {
+      jsonPayload = prefixed[1];
+    } else if (line.startsWith("{") && line.endsWith("}")) {
+      jsonPayload = line;
+    }
+
+    if (jsonPayload) {
+      try {
+        const payload = JSON.parse(jsonPayload) as {
+          downloaded_bytes?: number;
+          total_bytes?: number;
+          total_bytes_estimate?: number;
+          _percent?: number;
+          _percent_str?: string;
+        };
+        const downloaded = Number(payload.downloaded_bytes || 0);
+        const total = Number(payload.total_bytes || 0);
+        const estimate = Number(payload.total_bytes_estimate || 0);
+        const denominator = total > 0 ? total : estimate;
+        if (denominator > 0 && downloaded > 0) {
+          return Math.min(100, Math.max(0, (downloaded / denominator) * 100));
+        }
+
+        const percentNumber = Number(payload._percent);
+        if (Number.isFinite(percentNumber)) {
+          return Math.min(100, Math.max(0, percentNumber));
+        }
+
+        const percentFromString = Number.parseFloat(
+          String(payload._percent_str || "").replace("%", "").trim(),
+        );
+        if (Number.isFinite(percentFromString)) {
+          return Math.min(100, Math.max(0, percentFromString));
+        }
+      } catch {
+        // Fall through to legacy parsers.
+      }
+    }
+
+    const structured = line.match(
+      /^(?:download:)?(NA|\d+):(NA|\d+):(NA|\d+):\s*([0-9.]+)%?\s*$/i,
+    );
+    if (structured) {
+      const downloadedRaw = structured[1];
+      const totalRaw = structured[2];
+      const estimateRaw = structured[3];
+      const percentFallback = Number.parseFloat(structured[4] || "0");
+      const downloaded =
+        downloadedRaw && downloadedRaw.toUpperCase() !== "NA"
+          ? Number.parseFloat(downloadedRaw)
+          : 0;
+      const total =
+        totalRaw && totalRaw.toUpperCase() !== "NA"
+          ? Number.parseFloat(totalRaw)
+          : 0;
+      const estimate =
+        estimateRaw && estimateRaw.toUpperCase() !== "NA"
+          ? Number.parseFloat(estimateRaw)
+          : 0;
+      const denominator = total > 0 ? total : estimate;
+      if (denominator > 0 && downloaded > 0) {
+        return Math.min(100, Math.max(0, (downloaded / denominator) * 100));
+      }
+      if (Number.isFinite(percentFallback)) {
+        return Math.min(100, Math.max(0, percentFallback));
+      }
+    }
+
+    const match = line.match(/(\d{1,3}(?:\.\d+)?)%/);
+    if (!match || !match[1]) {
+      return null;
+    }
+    const value = Number.parseFloat(match[1]);
+    if (!Number.isFinite(value)) {
+      return null;
+    }
+    if (value < 0) {
+      return 0;
+    }
+    if (value > 100) {
+      return 100;
+    }
+    return value;
   }
 
   private async readManifest(): Promise<ToolManifest> {

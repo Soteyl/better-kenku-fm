@@ -69,3 +69,9 @@ export interface ResolvedTrackSource {
   title?: string;
   localPath?: string;
 }
+
+export interface TrackSourceProgress {
+  stage: string;
+  message: string;
+  progress?: number;
+}
