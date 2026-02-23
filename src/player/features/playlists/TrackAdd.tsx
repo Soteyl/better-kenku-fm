@@ -5,6 +5,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import Alert from "@mui/material/Alert";
 
 import { v4 as uuid } from "uuid";
 
@@ -24,11 +25,15 @@ export function TrackAdd({ playlistId, open, onClose }: TrackAddProps) {
 
   const [title, setTitle] = useState("");
   const [url, setURL] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
       setTitle("");
       setURL("");
+      setError(null);
+      setLoading(false);
     }
   }, [open]);
 
@@ -36,12 +41,30 @@ export function TrackAdd({ playlistId, open, onClose }: TrackAddProps) {
     setTitle(event.target.value);
   }
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const id = uuid();
-    dispatch(addTrack({ track: { id, title, url }, playlistId }));
-    dispatch(addTrackToQueueIfNeeded({ playlistId, trackId: id }));
-    onClose();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const resolved = await window.player.resolveTrackSource(url, playlistId);
+      const id = uuid();
+      const trackTitle = title || resolved.title || "Track";
+      dispatch(
+        addTrack({
+          track: { id, title: trackTitle, url: resolved.url },
+          playlistId,
+        }),
+      );
+      dispatch(addTrackToQueueIfNeeded({ playlistId, trackId: id }));
+      onClose();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unable to add track source";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -50,6 +73,11 @@ export function TrackAdd({ playlistId, open, onClose }: TrackAddProps) {
       <form onSubmit={handleSubmit}>
         <DialogContent>
           <AudioSelector value={url} onChange={setURL} onFileName={setTitle} />
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
           <TextField
             margin="dense"
             id="name"
@@ -65,9 +93,11 @@ export function TrackAdd({ playlistId, open, onClose }: TrackAddProps) {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button disabled={!title || !url} type="submit">
-            Add
+          <Button disabled={loading} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={!url || loading} type="submit">
+            {loading ? "Preparing..." : "Add"}
           </Button>
         </DialogActions>
       </form>

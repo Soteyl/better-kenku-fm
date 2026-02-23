@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, webUtils } from "electron";
 import {
   PlaylistPlaybackReply,
   PlaylistsReply,
+  ResolvedTrackSource,
   SoundboardPlaybackReply,
   SoundboardsReply,
 } from "../types/player";
@@ -69,7 +70,14 @@ const api = {
   },
   getPathForFile: (file: File) => {
     return webUtils.getPathForFile(file);
-  } 
+  },
+  resolveTrackSource: (source: string, playlistId: string) => {
+    return ipcRenderer.invoke(
+      "PLAYER_RESOLVE_TRACK_SOURCE",
+      source,
+      playlistId,
+    ) as Promise<ResolvedTrackSource>;
+  },
 };
 
 declare global {
