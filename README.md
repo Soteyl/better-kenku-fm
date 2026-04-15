@@ -13,6 +13,12 @@ This repository is a fork of Kenku FM with additional features and release autom
   - Downloads audio for playlist usage via optional bundled tools.
   - Uses per-platform tool resolution with checksum verification.
 
+## Release Tag Rules (Fork)
+
+- Stable release workflow (`publish-stable.yaml`) runs only on `vX.Y.Z` tags (example: `v1.5.6`).
+- Fork release workflow (`release-fork.yaml`) runs only on `vX.Y.Z.fN` tags (example: `v1.5.6.f1`).
+- Tags are immutable; GitHub does not append `.fN` automatically later.
+
 ## YouTube Import Tools
 
 Exact tools currently used by this fork:
