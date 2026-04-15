@@ -62,3 +62,16 @@ export interface SoundboardsReply {
     fadeOut: number;
   }[];
 }
+
+export interface ResolvedTrackSource {
+  sourceType: "direct" | "youtube";
+  url: string;
+  title?: string;
+  localPath?: string;
+}
+
+export interface TrackSourceProgress {
+  stage: string;
+  message: string;
+  progress?: number;
+}

@@ -20,6 +20,22 @@ type AudioSelectorProps = {
 
 const formats = ["mp3", "flac", "wav", "ogg", "mp4", "3gp", "webm", "mpeg"];
 
+function isYoutubeURL(value: string): boolean {
+  try {
+    const parsed = new URL(value.trim());
+    const host = parsed.hostname.toLowerCase();
+    return (
+      host === "youtube.com" ||
+      host === "www.youtube.com" ||
+      host === "m.youtube.com" ||
+      host === "youtu.be" ||
+      host.endsWith(".youtube.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function AudioSelector({
   value,
   onChange,
@@ -51,8 +67,11 @@ export function AudioSelector({
     multiple: false,
   });
 
+  const youtube = Boolean(value) && isYoutubeURL(value);
   const warning =
-    value && !formats.some((format) => value.toLowerCase().endsWith(format));
+    Boolean(value) &&
+    !youtube &&
+    !formats.some((format) => value.toLowerCase().endsWith(format));
 
   return (
     <>
@@ -73,7 +92,12 @@ export function AudioSelector({
         onDrop={handleURLDrop}
         color={warning ? "warning" : undefined}
         helperText={
-          warning ? (
+          youtube ? (
+            <>
+              YouTube link detected. Kenku will try to download audio from this
+              video using bundled yt-dlp/ffmpeg tools.
+            </>
+          ) : warning ? (
             <>
               Unable to verify audio format, this file may not be supported. See{" "}
               <Link

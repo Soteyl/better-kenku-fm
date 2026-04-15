@@ -1,5 +1,51 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
+# Better Kenku FM (Fork)
+
+This repository is a fork of Kenku FM with additional features and release automation.
+
+## Key Differences From Upstream
+
+- Built-in ad/tracker blocking for browser playback views.
+- Bookmarks add button fix and bookmarks interaction stability improvements.
+- Playlist YouTube URL import flow:
+  - Detects YouTube links in track add UI.
+  - Downloads audio for playlist usage via optional bundled tools.
+  - Uses per-platform tool resolution with checksum verification.
+
+## YouTube Import Tools
+
+Exact tools currently used by this fork:
+
+- `yt-dlp` `2026.02.21` for YouTube audio extraction.
+- `ffmpeg` support is wired in the optional tool system path and manifest model for conversion flows.
+- Tool binaries are downloaded on demand per platform and stored in app data (not global PATH).
+
+Manifest used for tool versions/checksums:
+
+- `https://github.com/Soteyl/better-kenku-fm/releases/download/tool-manifest/tools-manifest.json`
+
+## Launch On macOS
+
+Build and run locally:
+
+```bash
+yarn make
+open "out/Kenku FM-darwin-arm64/Kenku FM.app"
+```
+
+If macOS blocks a downloaded app with a Gatekeeper quarantine warning:
+
+```bash
+xattr -dr com.apple.quarantine "out/Kenku FM-darwin-arm64/Kenku FM.app"
+open "out/Kenku FM-darwin-arm64/Kenku FM.app"
+```
+
+## Notes
+
+- macOS public distribution still requires proper Apple Developer signing and notarization.
+- The original upstream project README begins below.
+
 # Kenku FM
 
 Kenku FM is a desktop application for Windows, MacOS and Linux designed to be the easiest way to share music in a Discord voice call.
@@ -47,6 +93,21 @@ To run Kenku FM in a development mode run:
 To make a production build run:
 
 `yarn make`
+
+### Optional Tool Manifest (GitHub Releases)
+
+YouTube playlist import can download platform-specific tools on demand.
+
+- Default manifest URL:
+  - `https://github.com/Soteyl/better-kenku-fm/releases/download/tool-manifest/tools-manifest.json`
+- Environment variable overrides:
+  - `KENKU_TOOL_MANIFEST_GH_OWNER`
+  - `KENKU_TOOL_MANIFEST_GH_REPO`
+  - `KENKU_TOOL_MANIFEST_GH_TAG`
+  - `KENKU_TOOL_MANIFEST_ASSET`
+  - `KENKU_TOOL_MANIFEST_PUBLIC_KEY_PEM` (optional signature verification)
+- Example manifest payload:
+  - `docs/tools-manifest.example.json`
 
 If you wish to add protected media playback support follow the build steps from the [Electron for Content Security](https://github.com/castlabs/electron-releases) repo.
 

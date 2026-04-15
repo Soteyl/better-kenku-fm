@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, webUtils } from "electron";
 import {
   PlaylistPlaybackReply,
   PlaylistsReply,
+  ResolvedTrackSource,
   SoundboardPlaybackReply,
   SoundboardsReply,
 } from "../types/player";
@@ -22,7 +23,8 @@ type Channel =
   | "PLAYER_REMOTE_SOUNDBOARD_GET_ALL_REQUEST"
   | "PLAYER_REMOTE_SOUNDBOARD_PLAY"
   | "PLAYER_REMOTE_SOUNDBOARD_STOP"
-  | "PLAYER_REMOTE_SOUNDBOARD_PLAYBACK_REQUEST";
+  | "PLAYER_REMOTE_SOUNDBOARD_PLAYBACK_REQUEST"
+  | "PLAYER_RESOLVE_TRACK_SOURCE_PROGRESS";
 
 const validChannels: Channel[] = [
   "PLAYER_REMOTE_PLAYLIST_GET_ALL_REQUEST",
@@ -41,6 +43,7 @@ const validChannels: Channel[] = [
   "PLAYER_REMOTE_SOUNDBOARD_PLAY",
   "PLAYER_REMOTE_SOUNDBOARD_STOP",
   "PLAYER_REMOTE_SOUNDBOARD_PLAYBACK_REQUEST",
+  "PLAYER_RESOLVE_TRACK_SOURCE_PROGRESS",
 ];
 
 const api = {
@@ -69,7 +72,15 @@ const api = {
   },
   getPathForFile: (file: File) => {
     return webUtils.getPathForFile(file);
-  } 
+  },
+  resolveTrackSource: (source: string, playlistId: string, requestId: string) => {
+    return ipcRenderer.invoke(
+      "PLAYER_RESOLVE_TRACK_SOURCE",
+      source,
+      playlistId,
+      requestId,
+    ) as Promise<ResolvedTrackSource>;
+  },
 };
 
 declare global {

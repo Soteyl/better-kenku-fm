@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "generatedAt": "2026-02-23T00:31:39Z",
+  "tools": {
+    "yt-dlp": {
+      "darwin-arm64": {
+        "version": "2026.02.21",
+        "url": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp_macos",
+        "sha256": "13dc66e13e87c187e16bf0def71b35f118bc06145907739d5549d213a9e3b9e5",
+        "binaryName": "yt-dlp"
+      },
+      "darwin-x64": {
+        "version": "2026.02.21",
+        "url": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp_macos",
+        "sha256": "13dc66e13e87c187e16bf0def71b35f118bc06145907739d5549d213a9e3b9e5",
+        "binaryName": "yt-dlp"
+      },
+      "linux-x64": {
+        "version": "2026.02.21",
+        "url": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp_linux",
+        "sha256": "057098b1390e8d4931e143eb889e9bbe088f17e40a2936f31ee218909f806f5f",
+        "binaryName": "yt-dlp"
+      },
+      "linux-arm64": {
+        "version": "2026.02.21",
+        "url": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp_linux_aarch64",
+        "sha256": "7571d3a9bb1ef31a490cd33c37341002006748078ed4d7fa617b0b6ce495f965",
+        "binaryName": "yt-dlp"
+      },
+      "win32-x64": {
+        "version": "2026.02.21",
+        "url": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp.exe",
+        "sha256": "72a91fe064d5758c976e94f877c24369477dd3e395614b5b270dd5400a035ffa",
+        "binaryName": "yt-dlp.exe"
+      },
+      "win32-arm64": {
+        "version": "2026.02.21",
+        "url": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp_arm64.exe",
+        "sha256": "17771a25b11af4bc8324de006b39fde7ff62deb8a95bf9000a182769f7b0450b",
+        "binaryName": "yt-dlp.exe"
+      }
+    }
+  }
+}
