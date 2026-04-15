@@ -3,11 +3,10 @@ on:
   push:
     tags:
       - "v*.*.*"
-    tags-ignore:
-      - "v*.*.*.f*"
 
 jobs:
   linux-release:
+    if: ${{ !contains(github.ref_name, '.f') }}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -42,6 +41,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   mac-release:
+    if: ${{ !contains(github.ref_name, '.f') }}
     runs-on: ${{ matrix.os.runner }}
 
     strategy:
@@ -152,6 +152,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   win-release:
+    if: ${{ !contains(github.ref_name, '.f') }}
     runs-on: ${{ matrix.os.runner }}
 
     strategy:
