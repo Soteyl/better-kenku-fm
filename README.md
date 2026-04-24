@@ -107,7 +107,9 @@ To make a production build run:
 Release workflow populates `.bundled-tools/<platform-arch>/` before packaging.
 
 - Command: `yarn run bundle:tools`
-- Required for CI release strict mode:
+- CI default source:
+  - `https://github.com/Soteyl/PyMusicLooper/releases/download/kenku-tools-latest`
+- Optional override:
   - `KENKU_PYMUSICLOOPER_BASE_URL` (base URL containing `pymusiclooper-kenku-<platform-arch>[.exe]`)
 - Optional local override:
   - `KENKU_PYMUSICLOOPER_TOOL_URL` (full URL for current platform binary)
