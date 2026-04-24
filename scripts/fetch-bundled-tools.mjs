@@ -8,6 +8,8 @@ const strictMode = process.env.KENKU_BUNDLED_TOOLS_STRICT === "1";
 const platformKey = `${process.platform}-${process.arch}`;
 const repoRoot = process.cwd();
 const outputDir = path.join(repoRoot, ".bundled-tools", platformKey);
+const defaultPyMusicLooperBaseURL =
+  "https://github.com/Soteyl/PyMusicLooper/releases/download/kenku-tools-latest";
 
 const ytDlpMap = {
   "darwin-arm64": {
@@ -45,10 +47,8 @@ function getPyMusicLooperConfig() {
     };
   }
 
-  const baseURL = process.env.KENKU_PYMUSICLOOPER_BASE_URL;
-  if (!baseURL) {
-    return null;
-  }
+  const baseURL =
+    process.env.KENKU_PYMUSICLOOPER_BASE_URL || defaultPyMusicLooperBaseURL;
 
   const fileName =
     process.platform === "win32"
