@@ -6,6 +6,12 @@ const config = {
     out: "./out",
     icon: "./src/assets/icon",
     appBundleId: "com.kenku.fm",
+    extraResource: [
+      {
+        from: path.join(__dirname, ".bundled-tools"),
+        to: "tools",
+      },
+    ],
   },
   makers: [
     {

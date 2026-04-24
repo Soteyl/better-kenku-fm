@@ -25,7 +25,9 @@ Exact tools currently used by this fork:
 
 - `yt-dlp` `2026.02.21` for YouTube audio extraction.
 - `ffmpeg` support is wired in the optional tool system path and manifest model for conversion flows.
-- Tool binaries are downloaded on demand per platform and stored in app data (not global PATH).
+- Release builds bundle platform-specific tools into app resources under `resources/tools/<platform-arch>/`.
+- Runtime fallback download remains available for missing tools in non-release/dev scenarios.
+- PyMusicLooper loop/tag tool is expected as `pymusiclooper-kenku(.exe)` in the same bundled tool path.
 
 Manifest used for tool versions/checksums:
 
@@ -99,6 +101,18 @@ To run Kenku FM in a development mode run:
 To make a production build run:
 
 `yarn make`
+
+### Bundled Tools For Release Builds
+
+Release workflow populates `.bundled-tools/<platform-arch>/` before packaging.
+
+- Command: `yarn run bundle:tools`
+- Required for CI release strict mode:
+  - `KENKU_PYMUSICLOOPER_BASE_URL` (base URL containing `pymusiclooper-kenku-<platform-arch>[.exe]`)
+- Optional local override:
+  - `KENKU_PYMUSICLOOPER_TOOL_URL` (full URL for current platform binary)
+- Strict mode:
+  - `KENKU_BUNDLED_TOOLS_STRICT=1` fails the build if `pymusiclooper-kenku` URL is not configured or download fails.
 
 ### Optional Tool Manifest (GitHub Releases)
 

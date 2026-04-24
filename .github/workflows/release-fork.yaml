@@ -61,6 +61,14 @@ jobs:
       - name: Install dependencies
         run: yarn install --non-interactive
 
+      - name: Fetch bundled optional tools
+        env:
+          KENKU_BUNDLED_TOOLS_STRICT: "1"
+          # Configure this as a repo variable/secret, e.g.
+          # https://github.com/<owner>/<repo>/releases/download/<tag>
+          KENKU_PYMUSICLOOPER_BASE_URL: ${{ vars.KENKU_PYMUSICLOOPER_BASE_URL }}
+        run: yarn run bundle:tools
+
       - name: Build distributables
         run: yarn run make
 
