@@ -4,10 +4,14 @@ export interface PlaylistPlaybackReply {
   muted: boolean;
   shuffle: boolean;
   repeat: "off" | "track" | "playlist";
+  loopEnabled: boolean;
   track?: {
     id: string;
     url: string;
     title: string;
+    loopStart?: number;
+    loopEnd?: number;
+    loopSource?: "analysis" | "tags" | "manual";
     duration: number;
     progress: number;
   };
@@ -74,4 +78,25 @@ export interface TrackSourceProgress {
   stage: string;
   message: string;
   progress?: number;
+}
+
+export interface LoopPointCandidate {
+  start: number;
+  end: number;
+  score?: number;
+}
+
+export interface LoopPointsResult {
+  source: "analysis" | "tags";
+  start: number;
+  end: number;
+  sampleRate?: number;
+  candidates?: LoopPointCandidate[];
+}
+
+export interface LoopTagsResult {
+  start?: number;
+  end?: number;
+  sampleRate?: number;
+  tags: Record<string, string>;
 }

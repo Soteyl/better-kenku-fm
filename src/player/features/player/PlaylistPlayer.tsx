@@ -14,6 +14,7 @@ import VolumeUp from "@mui/icons-material/VolumeUp";
 import RepeatIcon from "@mui/icons-material/RepeatRounded";
 import RepeatOne from "@mui/icons-material/RepeatOneRounded";
 import Shuffle from "@mui/icons-material/ShuffleRounded";
+import Loop from "@mui/icons-material/AllInclusiveRounded";
 import Next from "@mui/icons-material/SkipNextRounded";
 import Previous from "@mui/icons-material/SkipPreviousRounded";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -26,6 +27,7 @@ import {
   mute,
   shuffle,
   repeat,
+  setLoopEnabled,
 } from "../playlists/playlistPlaybackSlice";
 
 const minWidthForLargeContext = 650;
@@ -134,6 +136,9 @@ function Controls({
   const playbackRepeat = useSelector(
     (state: RootState) => state.playlistPlayback.repeat,
   );
+  const loopEnabled = useSelector(
+    (state: RootState) => state.playlistPlayback.loopEnabled,
+  );
 
   function handlePlay() {
     dispatch(playPause(!playing));
@@ -156,6 +161,10 @@ function Controls({
   function handleShuffle() {
     const newShuffle = !playbackShuffle;
     dispatch(shuffle(newShuffle));
+  }
+
+  function handleLoopToggle() {
+    dispatch(setLoopEnabled(!loopEnabled));
   }
 
   return (
@@ -195,6 +204,12 @@ function Controls({
         onClick={() => onPlaylistNext()}
       >
         <Next />
+      </IconButton>
+      <IconButton
+        aria-label={loopEnabled ? "loop enabled" : "loop disabled"}
+        onClick={handleLoopToggle}
+      >
+        <Loop color={loopEnabled ? "primary" : undefined} />
       </IconButton>
       <IconButton aria-label={`repeat ${playbackRepeat}`} onClick={handlRepeat}>
         {playbackRepeat === "off" ? (

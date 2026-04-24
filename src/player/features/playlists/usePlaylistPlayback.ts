@@ -12,13 +12,41 @@ import {
 } from "./playlistPlaybackSlice";
 import { Track } from "./playlistsSlice";
 
+type LoopRange = {
+  start: number;
+  end: number;
+};
+
+function resolveLoopRange(
+  track: Track | undefined,
+  duration: number,
+  loopEnabled: boolean,
+): LoopRange | null {
+  if (!loopEnabled || duration <= 0) {
+    return null;
+  }
+
+  const start = Math.max(0, track?.loopStart ?? 0);
+  const end = Math.min(duration, track?.loopEnd ?? duration);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end - start < 0.05) {
+    return null;
+  }
+
+  return { start, end };
+}
+
 export function usePlaylistPlayback(onError: (message: string) => void) {
   const trackRef = useRef<Howl | null>(null);
   const animationRef = useRef<number | null>(null);
+  const activeLoopRef = useRef<LoopRange | null>(null);
+  const wrappingLoopRef = useRef(false);
 
   const playlists = useSelector((state: RootState) => state.playlists);
   const store = useStore<RootState>();
   const muted = useSelector((state: RootState) => state.playlistPlayback.muted);
+  const loopEnabled = useSelector(
+    (state: RootState) => state.playlistPlayback.loopEnabled,
+  );
   const repeat = useSelector(
     (state: RootState) => state.playlistPlayback.repeat
   );
@@ -50,17 +78,20 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
       try {
         const howl = new Howl({
           src: track.url,
-          html5: true,
+          // Required for lower-latency seek wraps when looping.
+          html5: false,
           mute: muted,
           volume: 0,
         });
 
         trackRef.current = howl;
         howl.once("load", () => {
+          const duration = Math.floor(howl.duration());
+          activeLoopRef.current = resolveLoopRange(track, duration, loopEnabled);
           dispatch(
             playTrack({
               track,
-              duration: Math.floor(howl.duration()),
+              duration,
             })
           );
           // Fade out previous track and fade in new track
@@ -77,6 +108,18 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
           let prevTime = performance.now();
           function animatePlayback(time: number) {
             animationRef.current = requestAnimationFrame(animatePlayback);
+            const activeLoop = activeLoopRef.current;
+            if (howl.playing() && activeLoop && !wrappingLoopRef.current) {
+              const position = Number(howl.seek() || 0);
+              if (position >= activeLoop.end) {
+                wrappingLoopRef.current = true;
+                howl.seek(activeLoop.start);
+                dispatch(updatePlayback(Math.floor(activeLoop.start)));
+                wrappingLoopRef.current = false;
+                prevTime = time;
+                return;
+              }
+            }
             // Limit update to 1 time per second
             const delta = time - prevTime;
             if (howl.playing() && delta > 1000) {
@@ -99,7 +142,7 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
         error();
       }
     },
-    [onError, muted, store]
+    [onError, loopEnabled, muted, store]
   );
 
   const seek = useCallback((to: number) => {
@@ -108,6 +151,7 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
   }, []);
 
   const stop = useCallback(() => {
+    activeLoopRef.current = null;
     dispatch(playPause(false));
     dispatch(updatePlayback(0));
     trackRef.current?.stop();
@@ -203,6 +247,12 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
     const track = trackRef.current;
     // Move to next song or repeat this song on track end
     function handleEnd() {
+      const activeLoop = activeLoopRef.current;
+      if (activeLoop) {
+        seek(activeLoop.start);
+        track?.play();
+        return;
+      }
       if (!queue) {
         stop();
       } else if (repeat === "track") {
@@ -245,6 +295,11 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
       track?.off("end", handleEnd);
     };
   }, [repeat, queue, shuffle, playbackTrack, playlists, play, seek, stop]);
+
+  useEffect(() => {
+    const duration = store.getState().playlistPlayback.playback?.duration || 0;
+    activeLoopRef.current = resolveLoopRange(playbackTrack, duration, loopEnabled);
+  }, [loopEnabled, playbackTrack, store]);
 
   const pauseResume = useCallback((resume: boolean) => {
     if (trackRef.current) {

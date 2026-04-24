@@ -10,6 +10,7 @@ import {
   mute,
   adjustVolume,
   shuffle,
+  setLoopEnabled,
   startQueue,
 } from "./playlistPlaybackSlice";
 
@@ -91,6 +92,7 @@ export function PlaylistRemote({
         muted: playback.muted,
         shuffle: playback.shuffle,
         repeat: playback.repeat,
+        loopEnabled: playback.loopEnabled,
         track,
         playlist,
       });
@@ -180,6 +182,11 @@ export function PlaylistRemote({
       dispatch(repeat(repeated));
     });
 
+    window.player.on("PLAYER_REMOTE_PLAYLIST_PLAYBACK_LOOP", (args) => {
+      const looped = args[0];
+      dispatch(setLoopEnabled(looped));
+    });
+
     return () => {
       window.player.removeAllListeners("PLAYER_REMOTE_PLAYLIST_PLAYBACK_MUTE");
       window.player.removeAllListeners(
@@ -191,6 +198,7 @@ export function PlaylistRemote({
       window.player.removeAllListeners(
         "PLAYER_REMOTE_PLAYLIST_PLAYBACK_REPEAT"
       );
+      window.player.removeAllListeners("PLAYER_REMOTE_PLAYLIST_PLAYBACK_LOOP");
     };
   }, []);
 
