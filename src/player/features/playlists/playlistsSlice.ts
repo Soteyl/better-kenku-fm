@@ -4,6 +4,9 @@ export interface Track {
   id: string;
   url: string;
   title: string;
+  loopStart?: number;
+  loopEnd?: number;
+  loopSource?: "analysis" | "tags" | "manual";
 }
 
 export interface Playlist {

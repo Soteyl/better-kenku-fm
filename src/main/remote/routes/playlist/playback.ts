@@ -31,6 +31,11 @@ const ShuffleRequest = Type.Object({
 });
 type ShuffleRequestType = Static<typeof ShuffleRequest>;
 
+const LoopRequest = Type.Object({
+  loop: Type.Boolean(),
+});
+type LoopRequestType = Static<typeof LoopRequest>;
+
 const SeekRequest = Type.Object({
   to: Type.Number(),
 });
@@ -209,6 +214,30 @@ export const playback: (manager: PlayerManager) => FastifyPluginCallback =
             "PLAYER_REMOTE_PLAYLIST_PLAYBACK_REPEAT",
             request.body.repeat
           );
+          reply.status(200).send(request.body);
+        } else {
+          reply.status(503).send(VIEW_ERROR);
+        }
+      }
+    );
+
+    fastify.put<{
+      Body: LoopRequestType;
+      Reply: LoopRequestType | ReplyError;
+    }>(
+      "/loop",
+      {
+        schema: {
+          body: LoopRequest,
+          response: {
+            200: LoopRequest,
+          },
+        },
+      },
+      (request, reply) => {
+        const view = manager.getView();
+        if (view) {
+          view.send("PLAYER_REMOTE_PLAYLIST_PLAYBACK_LOOP", request.body.loop);
           reply.status(200).send(request.body);
         } else {
           reply.status(503).send(VIEW_ERROR);

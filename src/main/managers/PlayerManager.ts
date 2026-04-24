@@ -2,6 +2,8 @@ import { ipcMain, BrowserWindow, webContents } from "electron";
 import Fastify, { FastifyInstance } from "fastify";
 import { registerRemote } from "../remote";
 import {
+  LoopPointsResult,
+  LoopTagsResult,
   OptionalToolManager,
   ResolvedTrackSource,
   TrackSourceProgress,
@@ -24,6 +26,9 @@ export class PlayerManager {
     ipcMain.on("PLAYER_START_REMOTE", this._handleStartRemote);
     ipcMain.on("PLAYER_STOP_REMOTE", this._handleStopRemote);
     ipcMain.handle("PLAYER_RESOLVE_TRACK_SOURCE", this._handleResolveTrackSource);
+    ipcMain.handle("PLAYER_GET_LOOP_POINTS", this._handleGetLoopPoints);
+    ipcMain.handle("PLAYER_READ_LOOP_TAGS", this._handleReadLoopTags);
+    ipcMain.handle("PLAYER_WRITE_LOOP_TAGS", this._handleWriteLoopTags);
   }
 
   destroy() {
@@ -33,6 +38,9 @@ export class PlayerManager {
     ipcMain.off("PLAYER_START_REMOTE", this._handleStartRemote);
     ipcMain.off("PLAYER_STOP_REMOTE", this._handleStopRemote);
     ipcMain.removeHandler("PLAYER_RESOLVE_TRACK_SOURCE");
+    ipcMain.removeHandler("PLAYER_GET_LOOP_POINTS");
+    ipcMain.removeHandler("PLAYER_READ_LOOP_TAGS");
+    ipcMain.removeHandler("PLAYER_WRITE_LOOP_TAGS");
     this.stopRemote();
   }
 
@@ -120,5 +128,28 @@ export class PlayerManager {
         );
       },
     );
+  };
+
+  _handleGetLoopPoints = async (
+    _: Electron.IpcMainInvokeEvent,
+    trackPath: string,
+  ): Promise<LoopPointsResult> => {
+    return this.toolManager.getLoopPoints(trackPath);
+  };
+
+  _handleReadLoopTags = async (
+    _: Electron.IpcMainInvokeEvent,
+    trackPath: string,
+  ): Promise<LoopTagsResult> => {
+    return this.toolManager.readLoopTags(trackPath);
+  };
+
+  _handleWriteLoopTags = async (
+    _: Electron.IpcMainInvokeEvent,
+    trackPath: string,
+    start: number,
+    end: number,
+  ): Promise<LoopTagsResult> => {
+    return this.toolManager.writeLoopTags(trackPath, start, end);
   };
 }

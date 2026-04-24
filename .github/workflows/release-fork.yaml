@@ -1,4 +1,4 @@
-name: Release Fork Build
+name: Release Fork Build (vX.Y.Z.fN)
 
 on:
   push:
@@ -60,6 +60,14 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --non-interactive
+
+      - name: Fetch bundled optional tools
+        env:
+          KENKU_BUNDLED_TOOLS_STRICT: "1"
+          # Defaults to binaries released from the PyMusicLooper fork.
+          # Can be overridden by repo variable KENKU_PYMUSICLOOPER_BASE_URL.
+          KENKU_PYMUSICLOOPER_BASE_URL: ${{ vars.KENKU_PYMUSICLOOPER_BASE_URL || 'https://github.com/Soteyl/PyMusicLooper/releases/download/kenku-tools-latest' }}
+        run: yarn run bundle:tools
 
       - name: Build distributables
         run: yarn run make

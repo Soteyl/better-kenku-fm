@@ -7,7 +7,7 @@ import path from "path";
 import { pathToFileURL } from "url";
 import { spawn } from "child_process";
 
-type ToolName = "yt-dlp" | "ffmpeg";
+type ToolName = "yt-dlp" | "ffmpeg" | "pymusiclooper";
 type ToolSourceType = "direct" | "youtube";
 type PlatformKey = `${NodeJS.Platform}-${NodeJS.Architecture}`;
 
@@ -62,6 +62,27 @@ export interface TrackSourceProgress {
   details?: string;
 }
 
+export interface LoopPointCandidate {
+  start: number;
+  end: number;
+  score?: number;
+}
+
+export interface LoopPointsResult {
+  source: "analysis" | "tags";
+  start: number;
+  end: number;
+  sampleRate?: number;
+  candidates?: LoopPointCandidate[];
+}
+
+export interface LoopTagsResult {
+  start?: number;
+  end?: number;
+  sampleRate?: number;
+  tags: Record<string, string>;
+}
+
 const BUILTIN_TOOL_RELEASES: Record<
   ToolName,
   Partial<Record<PlatformKey, ToolRelease>>
@@ -112,6 +133,7 @@ const BUILTIN_TOOL_RELEASES: Record<
       },
     },
     ffmpeg: {},
+    pymusiclooper: {},
   };
 
 const REMOTE_MANIFEST_CACHE_TTL_MS = 1000 * 60 * 60 * 6;
@@ -202,6 +224,55 @@ export class OptionalToolManager {
     };
   }
 
+  async getLoopPoints(trackPath: string): Promise<LoopPointsResult> {
+    return this.runPyMusicLooperJSON<LoopPointsResult>([
+      "loop-points",
+      "--path",
+      trackPath,
+    ]);
+  }
+
+  async readLoopTags(trackPath: string): Promise<LoopTagsResult> {
+    return this.runPyMusicLooperJSON<LoopTagsResult>([
+      "tag-read",
+      "--path",
+      trackPath,
+    ]);
+  }
+
+  async writeLoopTags(
+    trackPath: string,
+    start: number,
+    end: number,
+  ): Promise<LoopTagsResult> {
+    return this.runPyMusicLooperJSON<LoopTagsResult>([
+      "tag-write",
+      "--path",
+      trackPath,
+      "--start",
+      String(start),
+      "--end",
+      String(end),
+    ]);
+  }
+
+  private async runPyMusicLooperJSON<T>(args: string[]): Promise<T> {
+    const binaryPath = await this.ensureToolInstalled("pymusiclooper");
+    const { code, stdout, stderr } = await this.execBinary(binaryPath, args);
+    if (code !== 0) {
+      throw new Error(stderr || "PyMusicLooper invocation failed");
+    }
+    const payload = stdout.trim();
+    if (!payload) {
+      throw new Error("PyMusicLooper returned empty response");
+    }
+    try {
+      return JSON.parse(payload) as T;
+    } catch {
+      throw new Error("PyMusicLooper returned invalid JSON");
+    }
+  }
+
   private getPlatformKey(): PlatformKey {
     return `${process.platform}-${process.arch}` as PlatformKey;
   }
@@ -229,6 +300,16 @@ export class OptionalToolManager {
     tool: ToolName,
     onProgress?: (progress: TrackSourceProgress) => void,
   ): Promise<string> {
+    const bundledPath = await this.resolveBundledToolPath(tool);
+    if (bundledPath) {
+      onProgress?.({
+        stage: "tool-ready",
+        message: `Using bundled ${tool}.`,
+        progress: 20,
+      });
+      return bundledPath;
+    }
+
     const release = await this.getRelease(tool);
     const binaryPath = path.join(this.binDir, release.binaryName);
     const manifest = await this.readManifest();
@@ -312,6 +393,40 @@ export class OptionalToolManager {
       await fs.rm(tempPath, { force: true });
       throw error;
     }
+  }
+
+  private getBundledBinaryName(tool: ToolName): string {
+    if (tool === "yt-dlp") {
+      return process.platform === "win32" ? "yt-dlp.exe" : "yt-dlp";
+    }
+    if (tool === "pymusiclooper") {
+      return process.platform === "win32"
+        ? "pymusiclooper-kenku.exe"
+        : "pymusiclooper-kenku";
+    }
+    return tool;
+  }
+
+  private async resolveBundledToolPath(tool: ToolName): Promise<string | null> {
+    const platformKey = this.getPlatformKey();
+    const binaryName = this.getBundledBinaryName(tool);
+    const candidates = [
+      path.join(process.resourcesPath, "tools", platformKey, binaryName),
+      path.join(process.resourcesPath, "tools", binaryName),
+      path.join(app.getAppPath(), "resources", "tools", platformKey, binaryName),
+      path.join(app.getAppPath(), "resources", "tools", binaryName),
+      path.join(app.getAppPath(), "tools", platformKey, binaryName),
+      path.join(app.getAppPath(), "tools", binaryName),
+    ];
+
+    for (const candidate of candidates) {
+      if (await this.exists(candidate)) {
+        await fs.chmod(candidate, 0o755).catch((_error: unknown): void => {});
+        return candidate;
+      }
+    }
+
+    return null;
   }
 
   private getRemoteManifestURL() {
