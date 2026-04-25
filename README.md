@@ -25,22 +25,13 @@ This repository is a fork of Kenku FM with additional features and release autom
 ## Release Tag Rules (Fork)
 
 - Fork release workflow (`release-fork.yaml`) runs on `vX.Y.Z.fN` tags (example: `v1.5.6.f2`).
-- Use fork tags only for this repository.
-- Tags are immutable; GitHub does not append `.fN` automatically later.
 
-## YouTube Import Tools
+## Dependencies
 
 Exact tools currently used by this fork:
 
-- `yt-dlp` `2026.02.21` for YouTube audio extraction.
-- `ffmpeg` support is wired in the optional tool system path and manifest model for conversion flows.
-- Release builds bundle platform-specific tools into app resources under `resources/tools/<platform-arch>/`.
-- Runtime fallback download remains available for missing tools in non-release/dev scenarios.
-- PyMusicLooper loop/tag tool is expected as `pymusiclooper-kenku(.exe)` in the same bundled tool path.
-
-Manifest used for tool versions/checksums:
-
-- `https://github.com/Soteyl/better-kenku-fm/releases/download/tool-manifest/tools-manifest.json`
+- [![yt-dlp](https://github.com/yt-dlp/yt-dlp/tree/master)] for YouTube audio extraction.
+- [![PyMusicLooper](https://github.com/Soteyl/PyMusicLooper)] loop/tag tool
 
 ## Launch On macOS
 
