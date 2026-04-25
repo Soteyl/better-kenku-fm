@@ -3262,12 +3262,11 @@ electron-winstaller@^5.3.0:
     "@electron/windows-sign" "^1.1.2"
 
 "electron@https://github.com/castlabs/electron-releases#37.6.0+wvcus":
-  version "40.1.0+wvcus"
-  resolved "git+ssh://git@github.com/castlabs/electron-releases.git"
-  integrity sha512-1ErsqB2RjOu7yKyiOp2aIOlLv87dv695zZb0BvdGoJizN3nP3c12XdpJ+6sZtBkKFMoVmX4Gi0leUJY1nYJ8/A==
+  version "37.6.0"
+  resolved "https://github.com/castlabs/electron-releases#328ceee5aad1fb998335707a9295ad7145e7f25e"
   dependencies:
     "@electron/get" "^2.0.0"
-    "@types/node" "^24.9.0"
+    "@types/node" "^22.7.7"
     extract-zip "^2.0.1"
 
 emoji-regex@^8.0.0:
