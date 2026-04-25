@@ -175,6 +175,7 @@ export class OptionalToolManager {
   );
   private readonly mediaDir = path.join(app.getPath("userData"), "playlist-media");
   private remoteManifestMemoryCache: CachedRemoteManifest | null = null;
+  private readonly bundledToolPathCache = new Map<ToolName, string>();
 
   async resolveTrackSource(
     source: string,
@@ -302,12 +303,16 @@ export class OptionalToolManager {
   ): Promise<string> {
     const bundledPath = await this.resolveBundledToolPath(tool);
     if (bundledPath) {
+      const stagedBundledPath = await this.ensureStagedBundledTool(
+        tool,
+        bundledPath,
+      );
       onProgress?.({
         stage: "tool-ready",
         message: `Using bundled ${tool}.`,
         progress: 20,
       });
-      return bundledPath;
+      return stagedBundledPath;
     }
 
     const release = await this.getRelease(tool);
@@ -413,10 +418,22 @@ export class OptionalToolManager {
     const candidates = [
       path.join(process.resourcesPath, "tools", platformKey, binaryName),
       path.join(process.resourcesPath, "tools", binaryName),
+      path.join(process.resourcesPath, ".bundled-tools", platformKey, binaryName),
+      path.join(process.resourcesPath, ".bundled-tools", binaryName),
       path.join(app.getAppPath(), "resources", "tools", platformKey, binaryName),
       path.join(app.getAppPath(), "resources", "tools", binaryName),
+      path.join(
+        app.getAppPath(),
+        "resources",
+        ".bundled-tools",
+        platformKey,
+        binaryName,
+      ),
+      path.join(app.getAppPath(), "resources", ".bundled-tools", binaryName),
       path.join(app.getAppPath(), "tools", platformKey, binaryName),
       path.join(app.getAppPath(), "tools", binaryName),
+      path.join(app.getAppPath(), ".bundled-tools", platformKey, binaryName),
+      path.join(app.getAppPath(), ".bundled-tools", binaryName),
     ];
 
     for (const candidate of candidates) {
@@ -427,6 +444,38 @@ export class OptionalToolManager {
     }
 
     return null;
+  }
+
+  private async ensureStagedBundledTool(
+    tool: ToolName,
+    sourcePath: string,
+  ): Promise<string> {
+    const cached = this.bundledToolPathCache.get(tool);
+    if (cached && (await this.exists(cached))) {
+      return cached;
+    }
+
+    const platformKey = this.getPlatformKey();
+    const binaryName = this.getBundledBinaryName(tool);
+    const stagedBinaryName = `${tool}-bundled-${app.getVersion()}-${platformKey}-${binaryName}`;
+    const stagedPath = path.join(this.binDir, stagedBinaryName);
+
+    if (!(await this.exists(stagedPath))) {
+      await fs.mkdir(this.binDir, { recursive: true });
+      const tempPath = path.join(
+        this.tempDir,
+        `${stagedBinaryName}-${Date.now()}.tmp`,
+      );
+      await fs.mkdir(this.tempDir, { recursive: true });
+      await fs.copyFile(sourcePath, tempPath);
+      await fs.chmod(tempPath, 0o755);
+      await fs.rename(tempPath, stagedPath);
+    } else {
+      await fs.chmod(stagedPath, 0o755).catch((_error: unknown): void => {});
+    }
+
+    this.bundledToolPathCache.set(tool, stagedPath);
+    return stagedPath;
   }
 
   private getRemoteManifestURL() {

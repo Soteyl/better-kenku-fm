@@ -34,6 +34,10 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
   const [loopError, setLoopError] = useState<string | null>(null);
   const [loopMessage, setLoopMessage] = useState<string | null>(null);
 
+  function logDebug(message: string) {
+    window.player.debugLog(`[track-settings] trackId=${track.id} ${message}`);
+  }
+
   useEffect(() => {
     if (!open) {
       return;
@@ -116,6 +120,7 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
     const trackPath = resolveLocalTrackPath(track.url);
     if (!trackPath) {
       setLoopError("Loop analysis is only available for local audio files.");
+      logDebug("analyze skipped non-local source");
       return;
     }
 
@@ -123,6 +128,7 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
     setLoopError(null);
     setLoopMessage(null);
     try {
+      logDebug(`analyze start path="${trackPath}"`);
       const loopPoints = await window.player.getLoopPoints(trackPath);
       if (!loopPoints.sampleRate || loopPoints.sampleRate <= 0) {
         throw new Error("PyMusicLooper did not provide sample rate.");
@@ -140,11 +146,17 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
           loopSource: "analysis",
         }),
       );
+      logDebug(
+        `analyze success sampleRate=${loopPoints.sampleRate} startSec=${loopStartSeconds.toFixed(
+          4,
+        )} endSec=${loopEndSeconds.toFixed(4)} source=analysis`,
+      );
       setLoopMessage("Loop points analyzed and applied.");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to analyze loop points.";
       setLoopError(message);
+      logDebug(`analyze error="${message}"`);
     } finally {
       setLoopBusy(null);
     }
@@ -154,6 +166,7 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
     const trackPath = resolveLocalTrackPath(track.url);
     if (!trackPath) {
       setLoopError("Tag read is only available for local audio files.");
+      logDebug("tag-read skipped non-local source");
       return;
     }
 
@@ -161,6 +174,7 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
     setLoopError(null);
     setLoopMessage(null);
     try {
+      logDebug(`tag-read start path="${trackPath}"`);
       const tags = await window.player.readLoopTags(trackPath);
       if (
         typeof tags.start !== "number" ||
@@ -183,11 +197,17 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
           loopSource: "tags",
         }),
       );
+      logDebug(
+        `tag-read success sampleRate=${tags.sampleRate} startSec=${loopStartSeconds.toFixed(
+          4,
+        )} endSec=${loopEndSeconds.toFixed(4)} source=tags`,
+      );
       setLoopMessage("Loop tags read and applied.");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to read loop tags.";
       setLoopError(message);
+      logDebug(`tag-read error="${message}"`);
     } finally {
       setLoopBusy(null);
     }
@@ -204,6 +224,9 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
           loopSource: "manual",
         }),
       );
+      logDebug(
+        `manual-apply startSec=${start.toFixed(4)} endSec=${end.toFixed(4)} source=manual`,
+      );
       setLoopMessage("Manual loop range applied.");
       setLoopError(null);
     } catch (error) {
@@ -211,6 +234,7 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
         error instanceof Error ? error.message : "Invalid manual loop range.";
       setLoopError(message);
       setLoopMessage(null);
+      logDebug(`manual-apply error="${message}"`);
     }
   }
 
@@ -218,6 +242,7 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
     const trackPath = resolveLocalTrackPath(track.url);
     if (!trackPath) {
       setLoopError("Tag write is only available for local audio files.");
+      logDebug("tag-write skipped non-local source");
       return;
     }
 
@@ -229,6 +254,9 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
       const sampleRate = await ensureLoopSampleRate(trackPath);
       const startSamples = Math.max(0, Math.round(start * sampleRate));
       const endSamples = Math.max(startSamples + 1, Math.round(end * sampleRate));
+      logDebug(
+        `tag-write start path="${trackPath}" sampleRate=${sampleRate} startSamples=${startSamples} endSamples=${endSamples}`,
+      );
       await window.player.writeLoopTags(trackPath, startSamples, endSamples);
       dispatch(
         editTrack({
@@ -238,11 +266,15 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
           loopSource: "manual",
         }),
       );
+      logDebug(
+        `tag-write success startSec=${start.toFixed(4)} endSec=${end.toFixed(4)} source=manual`,
+      );
       setLoopMessage("Loop tags written successfully.");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to write loop tags.";
       setLoopError(message);
+      logDebug(`tag-write error="${message}"`);
     } finally {
       setLoopBusy(null);
     }

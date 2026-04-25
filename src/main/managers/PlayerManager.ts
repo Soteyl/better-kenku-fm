@@ -1,5 +1,7 @@
-import { ipcMain, BrowserWindow, webContents } from "electron";
+import { ipcMain, BrowserWindow, webContents, app } from "electron";
 import Fastify, { FastifyInstance } from "fastify";
+import { appendFile, mkdir } from "fs/promises";
+import path from "path";
 import { registerRemote } from "../remote";
 import {
   LoopPointsResult,
@@ -18,6 +20,7 @@ export class PlayerManager {
   address = "127.0.0.1";
   port = "3333";
   toolManager = new OptionalToolManager();
+  debugLogPath = path.join(app.getPath("userData"), "player-debug.log");
 
   constructor() {
     ipcMain.on("PLAYER_GET_URL", this._handleGetURL);
@@ -29,6 +32,8 @@ export class PlayerManager {
     ipcMain.handle("PLAYER_GET_LOOP_POINTS", this._handleGetLoopPoints);
     ipcMain.handle("PLAYER_READ_LOOP_TAGS", this._handleReadLoopTags);
     ipcMain.handle("PLAYER_WRITE_LOOP_TAGS", this._handleWriteLoopTags);
+    ipcMain.on("PLAYER_DEBUG_LOG", this._handleDebugLog);
+    ipcMain.on("PLAYER_FORCE_QUIT", this._handleForceQuit);
   }
 
   destroy() {
@@ -41,6 +46,8 @@ export class PlayerManager {
     ipcMain.removeHandler("PLAYER_GET_LOOP_POINTS");
     ipcMain.removeHandler("PLAYER_READ_LOOP_TAGS");
     ipcMain.removeHandler("PLAYER_WRITE_LOOP_TAGS");
+    ipcMain.off("PLAYER_DEBUG_LOG", this._handleDebugLog);
+    ipcMain.off("PLAYER_FORCE_QUIT", this._handleForceQuit);
     this.stopRemote();
   }
 
@@ -151,5 +158,25 @@ export class PlayerManager {
     end: number,
   ): Promise<LoopTagsResult> => {
     return this.toolManager.writeLoopTags(trackPath, start, end);
+  };
+
+  _handleDebugLog = async (
+    _: Electron.IpcMainEvent,
+    payload: string,
+  ): Promise<void> => {
+    try {
+      await mkdir(path.dirname(this.debugLogPath), { recursive: true });
+      await appendFile(
+        this.debugLogPath,
+        `${new Date().toISOString()} ${payload}\n`,
+        "utf-8",
+      );
+    } catch {
+      // ignore logging failures
+    }
+  };
+
+  _handleForceQuit = (): void => {
+    app.quit();
   };
 }

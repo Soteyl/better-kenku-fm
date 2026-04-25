@@ -7,6 +7,8 @@ export interface Track {
   loopStart?: number;
   loopEnd?: number;
   loopSource?: "analysis" | "tags" | "manual";
+  loopAnalysisState?: "pending" | "error";
+  loopAnalysisError?: string;
 }
 
 export interface Playlist {

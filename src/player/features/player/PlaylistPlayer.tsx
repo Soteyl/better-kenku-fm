@@ -278,6 +278,16 @@ function Time({ onPlaylistSeek }: Pick<PlaylistPlayerProps, "onPlaylistSeek">) {
   const playback = useSelector(
     (state: RootState) => state.playlistPlayback.playback,
   );
+  const loopEnabled = useSelector(
+    (state: RootState) => state.playlistPlayback.loopEnabled,
+  );
+  const playlists = useSelector((state: RootState) => state.playlists);
+  const playbackTrack = useSelector(
+    (state: RootState) => state.playlistPlayback.track,
+  );
+  const track = playbackTrack?.id
+    ? playlists.tracks[playbackTrack.id] || playbackTrack
+    : undefined;
 
   function formatDuration(value: number) {
     const minute = Math.floor(value / 60);
@@ -295,9 +305,74 @@ function Time({ onPlaylistSeek }: Pick<PlaylistPlayerProps, "onPlaylistSeek">) {
 
   const time = timeOverride === null ? playback?.progress || 0 : timeOverride;
   const duration = playback?.duration || 0;
+  const hasLoopPoints =
+    Boolean(track) &&
+    typeof track?.loopStart === "number" &&
+    typeof track?.loopEnd === "number" &&
+    track.loopEnd > track.loopStart &&
+    duration > 0;
+  const loopStart = hasLoopPoints
+    ? Math.max(0, Math.min(duration, track?.loopStart ?? 0))
+    : 0;
+  const loopEnd = hasLoopPoints
+    ? Math.max(0, Math.min(duration, track?.loopEnd ?? 0))
+    : 0;
+  const loopStartPercent = hasLoopPoints ? (loopStart / duration) * 100 : 0;
+  const loopWidthPercent = hasLoopPoints
+    ? ((loopEnd - loopStart) / duration) * 100
+    : 0;
+  const showLoopPreview = loopEnabled && hasLoopPoints;
+  const loopAnalysisPending = track?.loopAnalysisState === "pending";
+  const loopAnalysisError =
+    track?.loopAnalysisState === "error" ? track?.loopAnalysisError : undefined;
 
   return (
-    <Box>
+    <Box sx={{ position: "relative" }}>
+      {showLoopPreview && (
+        <Box
+          sx={{
+            position: "absolute",
+            left: `${loopStartPercent}%`,
+            top: 6,
+            width: `${loopWidthPercent}%`,
+            height: 4,
+            borderRadius: 999,
+            backgroundColor: "rgba(76, 175, 80, 0.55)",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+      )}
+      {showLoopPreview && (
+        <>
+          <Box
+            sx={{
+              position: "absolute",
+              left: `calc(${loopStartPercent}% - 1px)`,
+              top: 2,
+              width: 2,
+              height: 12,
+              borderRadius: 1,
+              backgroundColor: "rgba(76, 175, 80, 0.95)",
+              pointerEvents: "none",
+              zIndex: 2,
+            }}
+          />
+          <Box
+            sx={{
+              position: "absolute",
+              left: `calc(${loopStartPercent + loopWidthPercent}% - 1px)`,
+              top: 2,
+              width: 2,
+              height: 12,
+              borderRadius: 1,
+              backgroundColor: "rgba(76, 175, 80, 0.95)",
+              pointerEvents: "none",
+              zIndex: 2,
+            }}
+          />
+        </>
+      )}
       <TimeSlider
         aria-label="time-indicator"
         size="small"
@@ -320,6 +395,22 @@ function Time({ onPlaylistSeek }: Pick<PlaylistPlayerProps, "onPlaylistSeek">) {
         <TinyText>{formatDuration(time)}</TinyText>
         <TinyText>-{formatDuration(duration - time)}</TinyText>
       </Box>
+      {loopEnabled && loopAnalysisPending && (
+        <Typography
+          variant="caption"
+          sx={{ display: "block", mt: 0.5, color: "rgba(76, 175, 80, 0.95)" }}
+        >
+          Analyzing loop...
+        </Typography>
+      )}
+      {loopEnabled && !loopAnalysisPending && loopAnalysisError && (
+        <Typography
+          variant="caption"
+          sx={{ display: "block", mt: 0.5, color: "rgba(255, 145, 0, 0.95)" }}
+        >
+          Loop analysis failed
+        </Typography>
+      )}
     </Box>
   );
 }

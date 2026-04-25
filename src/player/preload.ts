@@ -105,6 +105,12 @@ const api = {
       end,
     ) as Promise<LoopTagsResult>;
   },
+  debugLog: (message: string) => {
+    ipcRenderer.send("PLAYER_DEBUG_LOG", message);
+  },
+  forceQuit: () => {
+    ipcRenderer.send("PLAYER_FORCE_QUIT");
+  },
 };
 
 declare global {

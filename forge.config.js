@@ -6,12 +6,7 @@ const config = {
     out: "./out",
     icon: "./src/assets/icon",
     appBundleId: "com.kenku.fm",
-    extraResource: [
-      {
-        from: path.join(__dirname, ".bundled-tools"),
-        to: "tools",
-      },
-    ],
+    extraResource: [path.join(__dirname, ".bundled-tools")],
   },
   makers: [
     {
@@ -98,7 +93,7 @@ const config = {
     {
       name: "@timfish/forge-externals-plugin",
       config: {
-        externals: ["opusscript", "prism-media", "@snazzah/davey", "zlib-sync"],
+        externals: ["opusscript", "prism-media", "@snazzah/davey"],
         includeDeps: true,
       },
     },
