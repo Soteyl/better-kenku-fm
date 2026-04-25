@@ -18,6 +18,10 @@ This repository is a fork of Kenku FM with additional features and release autom
   - Seamless in-player loop wrapping once loop points are available.
   - Non-blocking loop tag persistence after analysis.
 
+<p align="center">
+  <img src="./docs/loop-preview.png" alt="Smart loop preview in Kenku FM" width="1000">
+</p>
+
 ## Release Tag Rules (Fork)
 
 - Fork release workflow (`release-fork.yaml`) runs on `vX.Y.Z.fN` tags (example: `v1.5.6.f2`).
