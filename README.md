@@ -30,8 +30,8 @@ This repository is a fork of Kenku FM with additional features and release autom
 
 Exact tools currently used by this fork:
 
-- [![yt-dlp](https://github.com/yt-dlp/yt-dlp/tree/master)] for YouTube audio extraction.
-- [![PyMusicLooper](https://github.com/Soteyl/PyMusicLooper)] loop/tag tool
+- ![yt-dlp](https://github.com/yt-dlp/yt-dlp/tree/master) for YouTube audio extraction.
+- ![PyMusicLooper](https://github.com/Soteyl/PyMusicLooper) loop/tag tool
 
 ## Launch On macOS
 
