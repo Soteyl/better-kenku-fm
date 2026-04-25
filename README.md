@@ -12,11 +12,16 @@ This repository is a fork of Kenku FM with additional features and release autom
   - Detects YouTube links in track add UI.
   - Downloads audio for playlist usage via optional bundled tools.
   - Uses per-platform tool resolution with checksum verification.
+- Smart local-track looping powered by PyMusicLooper:
+  - Loop analysis for tracks without existing loop metadata.
+  - Timeline loop-region preview and loop analysis status in player UI.
+  - Seamless in-player loop wrapping once loop points are available.
+  - Non-blocking loop tag persistence after analysis.
 
 ## Release Tag Rules (Fork)
 
-- Stable release workflow (`publish-stable.yaml`) runs only on `vX.Y.Z` tags (example: `v1.5.6`).
-- Fork release workflow (`release-fork.yaml`) runs only on `vX.Y.Z.fN` tags (example: `v1.5.6.f1`).
+- Fork release workflow (`release-fork.yaml`) runs on `vX.Y.Z.fN` tags (example: `v1.5.6.f2`).
+- Use fork tags only for this repository.
 - Tags are immutable; GitHub does not append `.fN` automatically later.
 
 ## YouTube Import Tools
