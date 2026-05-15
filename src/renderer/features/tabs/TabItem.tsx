@@ -8,14 +8,17 @@ import IconButton from "@mui/material/IconButton";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
-import React from "react";
+import Paper from "@mui/material/Paper";
+import Popper from "@mui/material/Popper";
+import Slider from "@mui/material/Slider";
+import React, { useRef, useState } from "react";
 
 import { v4 as uuid } from "uuid";
 
 import { useDispatch, useSelector } from "react-redux";
 import { type RootState } from "../../app/store";
 import { addBookmark, removeBookmark } from "../bookmarks/bookmarksSlice";
-import { setMuted } from "../player/playerSlice";
+import { setMuted, setVolume } from "../player/playerSlice";
 import { safeURL } from "./Tabs";
 import { Tab, editTab, removeTab, selectTab } from "./tabsSlice";
 
@@ -34,6 +37,10 @@ export function TabItem({ tab, selected, allowClose, shadow }: TabType) {
   );
   const dispatch = useDispatch();
 
+  const [sliderOpen, setSliderOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const isBookmarked = Object.values(bookmarks).filter((bookmark) => {
     return bookmark.url === tab.url;
   });
@@ -44,31 +51,95 @@ export function TabItem({ tab, selected, allowClose, shadow }: TabType) {
   const shownIcons =
     Number(showBookmark) + Number(showClose) + Number(showMedia);
 
+  const volume = tab.volume ?? 1;
+  const isMuted = tab.muted || volume === 0;
+
+  function openSlider(el: HTMLElement) {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+    setAnchorEl(el);
+    setSliderOpen(true);
+  }
+
+  function scheduleClose() {
+    hideTimerRef.current = setTimeout(() => {
+      setSliderOpen(false);
+    }, 150);
+  }
+
+  function handleVolumeIconClick() {
+    const muted = !isMuted;
+    window.kenku.setMuted(tab.id, muted);
+    if (tab.id === playerTabId) {
+      dispatch(setMuted(muted));
+    } else {
+      dispatch(editTab({ id: tab.id, muted }));
+    }
+  }
+
+  function handleVolumeChange(_: Event, value: number | number[]) {
+    const newVolume = (value as number) / 100;
+    window.kenku.setVolume(tab.id, newVolume);
+    if (tab.id === playerTabId) {
+      dispatch(setVolume(newVolume));
+    } else {
+      dispatch(
+        editTab({ id: tab.id, volume: newVolume, muted: newVolume === 0 }),
+      );
+    }
+  }
+
   return (
     <ListItem
       secondaryAction={
         <>
           {showMedia && (
-            <IconButton
-              edge="end"
-              aria-label={tab.muted ? "unmute" : "mute"}
-              size="small"
-              onClick={() => {
-                const muted = !tab.muted;
-                window.kenku.setMuted(tab.id, muted);
-                if (tab.id === playerTabId) {
-                  dispatch(setMuted(muted));
-                } else {
-                  dispatch(editTab({ id: tab.id, muted }));
-                }
-              }}
-            >
-              {tab.muted ? (
-                <VolumeOffIcon sx={{ fontSize: "1rem" }} />
-              ) : (
-                <VolumeIcon sx={{ fontSize: "1rem" }} />
-              )}
-            </IconButton>
+            <>
+              <IconButton
+                edge="end"
+                aria-label={isMuted ? "unmute" : "mute"}
+                size="small"
+                onClick={handleVolumeIconClick}
+                onMouseEnter={(e) => openSlider(e.currentTarget)}
+                onMouseLeave={scheduleClose}
+              >
+                {isMuted ? (
+                  <VolumeOffIcon sx={{ fontSize: "1rem" }} />
+                ) : (
+                  <VolumeIcon sx={{ fontSize: "1rem" }} />
+                )}
+              </IconButton>
+              <Popper
+                open={sliderOpen}
+                anchorEl={anchorEl}
+                placement="top"
+                sx={{ zIndex: 1300 }}
+              >
+                <Paper
+                  elevation={4}
+                  sx={{ px: 1.5, pt: 1.5, pb: 1, display: "flex", flexDirection: "column", alignItems: "center" }}
+                  onMouseEnter={() => {
+                    if (hideTimerRef.current) {
+                      clearTimeout(hideTimerRef.current);
+                      hideTimerRef.current = null;
+                    }
+                  }}
+                  onMouseLeave={scheduleClose}
+                >
+                  <Slider
+                    orientation="vertical"
+                    value={isMuted ? 0 : Math.round(volume * 100)}
+                    min={0}
+                    max={100}
+                    onChange={handleVolumeChange}
+                    sx={{ height: 80 }}
+                    size="small"
+                  />
+                </Paper>
+              </Popper>
+            </>
           )}
           {showBookmark && (
             <IconButton

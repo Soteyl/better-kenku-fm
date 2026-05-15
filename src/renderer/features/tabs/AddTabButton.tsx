@@ -27,6 +27,7 @@ export function AddTabButton() {
         icon: "",
         playingMedia: 0,
         muted: false,
+        volume: 1,
       })
     );
     dispatch(selectTab(id));

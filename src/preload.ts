@@ -149,6 +149,9 @@ const api = {
   setMuted: (id: number, muted: boolean) => {
     ipcRenderer.send("AUDIO_CAPTURE_SET_MUTED", id, muted);
   },
+  setVolume: (id: number, volume: number) => {
+    ipcRenderer.send("AUDIO_CAPTURE_SET_VOLUME", id, volume);
+  },
   startExternalAudioCapture: (deviceId: string) => {
     ipcRenderer.send("AUDIO_CAPTURE_START_EXTERNAL_AUDIO_CAPTURE", deviceId);
   },

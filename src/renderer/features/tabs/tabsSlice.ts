@@ -8,6 +8,8 @@ export interface Tab {
   /** The number of media tracks playing on this tab */
   playingMedia: number;
   muted: boolean;
+  /** Per-tab volume, 0–1, default 1 */
+  volume: number;
 }
 
 export interface TabsState {

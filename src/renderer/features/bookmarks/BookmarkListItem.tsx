@@ -41,6 +41,7 @@ export function BookmarkListItem({ bookmark, shadow }: BookmarkListItemProps) {
         icon: bookmark.icon,
         playingMedia: 0,
         muted: false,
+        volume: 1,
       }),
     );
     dispatch(selectTab(id));

@@ -25,6 +25,13 @@ ipcRenderer.on(
   }
 );
 
+ipcRenderer.on(
+  "AUDIO_CAPTURE_BROWSER_VIEW_VOLUME",
+  (_, viewId: number, volume: number) => {
+    audioCaptureManager.setVolume(viewId, volume);
+  }
+);
+
 ipcRenderer.on("AUDIO_CAPTURE_SET_LOOPBACK", (_, loopback: boolean) => {
   audioCaptureManager.setLoopback(loopback);
 });

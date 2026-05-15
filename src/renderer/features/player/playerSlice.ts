@@ -18,6 +18,7 @@ const initialState: PlayerState = {
     title: "Kenku Player",
     playingMedia: 0,
     muted: false,
+    volume: 1,
   },
   remoteEnabled: false,
 };
@@ -41,6 +42,10 @@ export const playerSlice = createSlice({
     setMuted: (state, action: PayloadAction<boolean>) => {
       state.tab.muted = action.payload;
     },
+    setVolume: (state, action: PayloadAction<number>) => {
+      state.tab.volume = action.payload;
+      state.tab.muted = action.payload === 0;
+    },
   },
 });
 
@@ -50,6 +55,7 @@ export const {
   increasePlayingMedia,
   decreasePlayingMedia,
   setMuted,
+  setVolume,
 } = playerSlice.actions;
 
 export default playerSlice.reducer;

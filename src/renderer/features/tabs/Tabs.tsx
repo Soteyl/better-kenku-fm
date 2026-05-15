@@ -150,6 +150,7 @@ export function Tabs() {
           icon: "",
           playingMedia: 0,
           muted: false,
+          volume: 1,
         }),
       );
       dispatch(selectTab(id));
