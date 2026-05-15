@@ -21,6 +21,9 @@ import { addBookmark, removeBookmark } from "../bookmarks/bookmarksSlice";
 import { setMuted, setVolume } from "../player/playerSlice";
 import { safeURL } from "./Tabs";
 import { Tab, editTab, removeTab, selectTab } from "./tabsSlice";
+import { getBounds } from "./getBounds";
+
+const SLIDER_POPUP_HEIGHT = 130;
 
 type TabType = {
   tab: Tab;
@@ -32,6 +35,9 @@ type TabType = {
 export function TabItem({ tab, selected, allowClose, shadow }: TabType) {
   const playerTabId = useSelector((state: RootState) => state.player.tab.id);
   const tabIds = useSelector((state: RootState) => state.tabs.tabs.allIds);
+  const visibleTabId = useSelector(
+    (state: RootState) => state.tabs.selectedTab ?? state.player.tab.id,
+  );
   const bookmarks = useSelector(
     (state: RootState) => state.bookmarks.bookmarks.byId,
   );
@@ -54,6 +60,30 @@ export function TabItem({ tab, selected, allowClose, shadow }: TabType) {
   const volume = tab.volume ?? 1;
   const isMuted = tab.muted || volume === 0;
 
+  function pushBrowserViewDown() {
+    if (visibleTabId == null) return;
+    const bounds = getBounds();
+    window.kenku.setBrowserViewBounds(
+      visibleTabId,
+      bounds.x,
+      bounds.y + SLIDER_POPUP_HEIGHT,
+      bounds.width,
+      Math.max(0, bounds.height - SLIDER_POPUP_HEIGHT),
+    );
+  }
+
+  function restoreBrowserViewBounds() {
+    if (visibleTabId == null) return;
+    const bounds = getBounds();
+    window.kenku.setBrowserViewBounds(
+      visibleTabId,
+      bounds.x,
+      bounds.y,
+      bounds.width,
+      bounds.height,
+    );
+  }
+
   function openSlider(el: HTMLElement) {
     if (hideTimerRef.current) {
       clearTimeout(hideTimerRef.current);
@@ -61,11 +91,13 @@ export function TabItem({ tab, selected, allowClose, shadow }: TabType) {
     }
     setAnchorEl(el);
     setSliderOpen(true);
+    pushBrowserViewDown();
   }
 
   function scheduleClose() {
     hideTimerRef.current = setTimeout(() => {
       setSliderOpen(false);
+      restoreBrowserViewBounds();
     }, 150);
   }
 
@@ -114,8 +146,8 @@ export function TabItem({ tab, selected, allowClose, shadow }: TabType) {
               <Popper
                 open={sliderOpen}
                 anchorEl={anchorEl}
-                placement="top"
-                sx={{ zIndex: 1300 }}
+                placement="bottom"
+                sx={{ zIndex: 9999 }}
               >
                 <Paper
                   elevation={4}
