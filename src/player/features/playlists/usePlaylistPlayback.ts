@@ -338,8 +338,10 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
 
         const howl = new Howl({
           src: track.url,
-          // Required for lower-latency seek wraps when looping.
-          html5: false,
+          // Use Web Audio API only when loop points are active — it enables
+          // lower-latency seek wraps. Fall back to html5 (streaming) otherwise
+          // so large files start immediately without full decode upfront.
+          html5: !(loopEnabled && hasTrackLoopPoints(track)),
           mute: muted,
           volume: 0,
         });

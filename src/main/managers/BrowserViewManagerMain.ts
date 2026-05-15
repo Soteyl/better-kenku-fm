@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, shell, WebContentsView } from "electron";
+import { app, BrowserWindow, ipcMain, shell, WebContentsView } from "electron";
 import { getUserAgent } from "../userAgent";
 
 /**
@@ -176,6 +176,7 @@ export class BrowserViewManagerMain {
     const view = new WebContentsView({
       webPreferences: {
         preload,
+        webSecurity: app.isPackaged,
       },
     });
     this.window.contentView.addChildView(view);
