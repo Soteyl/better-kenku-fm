@@ -14,6 +14,7 @@ import Divider from "@mui/material/Divider";
 import { useDispatch } from "react-redux";
 import { editTrack, Track } from "./playlistsSlice";
 import { AudioSelector } from "../../common/AudioSelector";
+import { resolveLocalTrackPath } from "./trackUtils";
 
 type TrackSettingsProps = {
   track: Track;
@@ -35,7 +36,9 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
   const [loopMessage, setLoopMessage] = useState<string | null>(null);
 
   function logDebug(message: string) {
-    window.player.debugLog(`[track-settings] trackId=${track.id} ${message}`);
+    if (process.env.NODE_ENV === "development") {
+      window.player.debugLog(`[track-settings] trackId=${track.id} ${message}`);
+    }
   }
 
   useEffect(() => {
@@ -61,29 +64,6 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
 
   function handleURLChange(url: string) {
     dispatch(editTrack({ id: track.id, url }));
-  }
-
-  function resolveLocalTrackPath(url: string): string | null {
-    if (url.startsWith("file://")) {
-      try {
-        const parsed = new URL(url);
-        const pathname = decodeURIComponent(parsed.pathname);
-        if (/^\/[A-Za-z]:\//.test(pathname)) {
-          return pathname.slice(1);
-        }
-        return pathname;
-      } catch {
-        return null;
-      }
-    }
-
-    if (url.startsWith("/")) {
-      return url;
-    }
-    if (/^[A-Za-z]:\\/.test(url)) {
-      return url;
-    }
-    return null;
   }
 
   function parseLoopRangeSeconds(): { start: number; end: number } {

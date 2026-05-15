@@ -94,7 +94,7 @@ export function TrackAdd({ playlistId, open, onClose }: TrackAddProps) {
 
     window.player.on("PLAYER_RESOLVE_TRACK_SOURCE_PROGRESS", handleProgress);
     return () => {
-      window.player.removeAllListeners("PLAYER_RESOLVE_TRACK_SOURCE_PROGRESS");
+      window.player.removeListener("PLAYER_RESOLVE_TRACK_SOURCE_PROGRESS", handleProgress);
     };
   }, [requestId]);
 

@@ -35,9 +35,28 @@ const rootReducer = combineReducers({
 
 const persistConfig = {
   key: "player",
-  version: 1,
+  version: 2,
   storage,
   whitelist: ["playlists", "soundboards"],
+  migrate: (state: any) => {
+    if (!state) return Promise.resolve(state);
+    const tracks = state?.playlists?.tracks;
+    if (tracks && typeof tracks === "object") {
+      const cleaned: Record<string, any> = {};
+      for (const [id, track] of Object.entries(tracks) as [string, any][]) {
+        cleaned[id] = {
+          ...track,
+          loopAnalysisState: undefined,
+          loopAnalysisError: undefined,
+        };
+      }
+      return Promise.resolve({
+        ...state,
+        playlists: { ...state.playlists, tracks: cleaned },
+      });
+    }
+    return Promise.resolve(state);
+  },
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

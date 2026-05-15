@@ -50,11 +50,26 @@ const validChannels: Channel[] = [
   "PLAYER_RESOLVE_TRACK_SOURCE_PROGRESS",
 ];
 
+const listenerMap = new WeakMap<
+  (...args: any[]) => any,
+  (...args: any[]) => any
+>();
+
 const api = {
   on: (channel: Channel, callback: (...args: any[]) => any) => {
     if (validChannels.includes(channel)) {
       const newCallback = (_: any, ...args: any[]) => callback(args);
+      listenerMap.set(callback, newCallback);
       ipcRenderer.on(channel, newCallback);
+    }
+  },
+  removeListener: (channel: Channel, callback: (...args: any[]) => any) => {
+    if (validChannels.includes(channel)) {
+      const wrapped = listenerMap.get(callback);
+      if (wrapped) {
+        ipcRenderer.removeListener(channel, wrapped);
+        listenerMap.delete(callback);
+      }
     }
   },
   removeAllListeners: (channel: Channel) => {

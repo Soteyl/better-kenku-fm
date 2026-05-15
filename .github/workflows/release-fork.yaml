@@ -18,22 +18,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create release branch from main
+      - name: Create release branch from tag
         shell: bash
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
           RELEASE_BRANCH="release/${TAG}"
 
-          git fetch origin main
-
           if git ls-remote --heads origin "${RELEASE_BRANCH}" | grep -q "${RELEASE_BRANCH}"; then
             echo "Branch ${RELEASE_BRANCH} already exists, skipping."
             exit 0
           fi
 
-          MAIN_SHA=$(git rev-parse origin/main)
-          git branch "${RELEASE_BRANCH}" "${MAIN_SHA}"
+          TAG_SHA=$(git rev-parse "refs/tags/${TAG}")
+          git branch "${RELEASE_BRANCH}" "${TAG_SHA}"
           git push origin "${RELEASE_BRANCH}"
 
   build-release:

@@ -1,11 +1,12 @@
 import { app } from "electron";
 import { createHash, verify as cryptoVerify } from "crypto";
-import { createReadStream } from "fs";
+import { createReadStream, createWriteStream } from "fs";
 import { promises as fs } from "fs";
 import https from "https";
 import path from "path";
 import { pathToFileURL } from "url";
 import { spawn } from "child_process";
+import { isYoutubeURL } from "../../shared/youtubeUtils";
 
 type ToolName = "yt-dlp" | "ffmpeg" | "pymusiclooper";
 type ToolSourceType = "direct" | "youtube";
@@ -148,22 +149,6 @@ const REMOTE_MANIFEST_ASSET =
 const REMOTE_MANIFEST_PUBLIC_KEY_PEM =
   process.env.KENKU_TOOL_MANIFEST_PUBLIC_KEY_PEM;
 
-function isYoutubeURL(value: string): boolean {
-  try {
-    const parsed = new URL(value.trim());
-    const host = parsed.hostname.toLowerCase();
-    return (
-      host === "youtube.com" ||
-      host === "www.youtube.com" ||
-      host === "m.youtube.com" ||
-      host === "youtu.be" ||
-      host.endsWith(".youtube.com")
-    );
-  } catch {
-    return false;
-  }
-}
-
 export class OptionalToolManager {
   private readonly baseDir = path.join(app.getPath("userData"), "optional-tools");
   private readonly binDir = path.join(this.baseDir, "bin");
@@ -258,7 +243,14 @@ export class OptionalToolManager {
   }
 
   private async runPyMusicLooperJSON<T>(args: string[]): Promise<T> {
-    const binaryPath = await this.ensureToolInstalled("pymusiclooper");
+    let binaryPath: string;
+    try {
+      binaryPath = await this.ensureToolInstalled("pymusiclooper");
+    } catch {
+      throw new Error(
+        "PyMusicLooper is not available. Make sure the app was installed from an official release that includes bundled tools.",
+      );
+    }
     const { code, stdout, stderr } = await this.execBinary(binaryPath, args);
     if (code !== 0) {
       throw new Error(stderr || "PyMusicLooper invocation failed");
@@ -875,15 +867,34 @@ export class OptionalToolManager {
     await fs.rename(tempPath, this.manifestPath);
   }
 
-  private async downloadToFile(url: string, destination: string): Promise<void> {
-    const response = await this.httpGetBuffer(url);
-    await fs.writeFile(destination, response);
+  private async httpGetBuffer(url: string, redirectCount = 0): Promise<Buffer> {
+    if (redirectCount > 5) {
+      throw new Error("Too many redirects");
+    }
+    return new Promise((resolve, reject) => {
+      const req = https.get(url, (res) => {
+        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          resolve(this.httpGetBuffer(res.headers.location, redirectCount + 1));
+          return;
+        }
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode ?? "unknown"}`));
+          return;
+        }
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => resolve(Buffer.concat(chunks)));
+        res.on("error", reject);
+      });
+      req.on("error", reject);
+    });
   }
 
-  private async httpGetBuffer(
+  private async downloadToFile(
     url: string,
+    destination: string,
     redirectCount = 0,
-  ): Promise<Buffer> {
+  ): Promise<void> {
     if (redirectCount > 5) {
       throw new Error("Too many redirects while downloading tool");
     }
@@ -897,21 +908,27 @@ export class OptionalToolManager {
           statusCode < 400 &&
           res.headers.location
         ) {
-          resolve(this.httpGetBuffer(res.headers.location, redirectCount + 1));
+          res.resume();
+          resolve(
+            this.downloadToFile(res.headers.location, destination, redirectCount + 1),
+          );
           return;
         }
         if (statusCode !== 200) {
+          res.resume();
           reject(
-            new Error(
-              `Failed to download tool: ${statusCode ?? "unknown status"}`,
-            ),
+            new Error(`Failed to download tool: ${statusCode ?? "unknown status"}`),
           );
           return;
         }
 
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => resolve(Buffer.concat(chunks)));
+        const file = createWriteStream(destination);
+        res.pipe(file);
+        file.on("finish", () => file.close((err) => (err ? reject(err) : resolve())));
+        file.on("error", (err) => {
+          fs.rm(destination, { force: true }).catch(() => {});
+          reject(err);
+        });
         res.on("error", reject);
       });
 

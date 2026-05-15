@@ -11,6 +11,7 @@ import {
   cleanFileName,
 } from "../../renderer/common/drop";
 import useFileDrop, { FileInfo } from "./useFileDrop";
+import { isYoutubeURL } from "../../shared/youtubeUtils";
 
 type AudioSelectorProps = {
   value: string;
@@ -19,22 +20,6 @@ type AudioSelectorProps = {
 };
 
 const formats = ["mp3", "flac", "wav", "ogg", "mp4", "3gp", "webm", "mpeg"];
-
-function isYoutubeURL(value: string): boolean {
-  try {
-    const parsed = new URL(value.trim());
-    const host = parsed.hostname.toLowerCase();
-    return (
-      host === "youtube.com" ||
-      host === "www.youtube.com" ||
-      host === "m.youtube.com" ||
-      host === "youtu.be" ||
-      host.endsWith(".youtube.com")
-    );
-  } catch {
-    return false;
-  }
-}
 
 export function AudioSelector({
   value,
