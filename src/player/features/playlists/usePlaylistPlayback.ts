@@ -56,6 +56,14 @@ function hasTrackLoopPoints(track: Track | undefined): boolean {
   );
 }
 
+function isFlacUrl(url: string): boolean {
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith(".flac");
+  } catch {
+    return url.toLowerCase().endsWith(".flac");
+  }
+}
+
 export function usePlaylistPlayback(onError: (message: string) => void) {
   const trackRef = useRef<Howl | null>(null);
   const animationRef = useRef<number | null>(null);
@@ -314,10 +322,12 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
 
         const howl = new Howl({
           src: track.url,
-          // Use Web Audio API only when loop points are active — it enables
-          // lower-latency seek wraps. Fall back to html5 (streaming) otherwise
-          // so large files start immediately without full decode upfront.
-          html5: !(loopEnabled && hasTrackLoopPoints(track)),
+          // FLAC files have streaming reliability issues with Electron's HTML5
+          // audio pool (recycled audio elements fail to replay after the first
+          // track ends). Use Web Audio API for FLAC regardless of loop state.
+          // Also use Web Audio API when loop points are active for lower-latency
+          // seek wraps; fall back to html5 streaming for everything else.
+          html5: !isFlacUrl(track.url) && !(loopEnabled && hasTrackLoopPoints(track)),
           mute: muted,
           volume: 0,
         });
@@ -400,9 +410,19 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
           animationRef.current = requestAnimationFrame(animatePlayback);
         });
 
-        howl.on("loaderror", error);
+        howl.on("loaderror", (_id: number, errorDetail: unknown) => {
+          logDebug(
+            `loaderror id=${track.id} url="${track.url}" detail=${JSON.stringify(errorDetail)}`,
+          );
+          error();
+        });
 
-        howl.on("playerror", error);
+        howl.on("playerror", (_id: number, errorDetail: unknown) => {
+          logDebug(
+            `playerror id=${track.id} url="${track.url}" detail=${JSON.stringify(errorDetail)}`,
+          );
+          error();
+        });
 
         const sound = (howl as any)._sounds[0];
         if (!sound) {
@@ -561,8 +581,14 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
       if (!queue) {
         stop();
       } else if (repeat === "track") {
-        seek(0);
-        track?.play();
+        // Always create a fresh Howl so recycled HTML5 audio elements (from
+        // Howler's pool) don't cause playback failures on formats like FLAC.
+        const currentTrack = playbackTrack
+          ? playlists.tracks[playbackTrack.id] ?? playbackTrack
+          : null;
+        if (currentTrack) {
+          play(currentTrack);
+        }
       } else {
         let index = queue.current + 1;
         if (index >= queue.tracks.length) {
@@ -580,17 +606,10 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
           id = queue.tracks[index];
         }
         if (id) {
-          if (id === playbackTrack?.id) {
-            // Playing the same track just restart it
-            seek(0);
-            track?.play();
-          } else {
-            // Play the next track
-            const nextTrack = playlists.tracks[id];
-            if (nextTrack) {
-              play(nextTrack);
-              dispatch(updateQueue(index));
-            }
+          const nextTrack = playlists.tracks[id];
+          if (nextTrack) {
+            play(nextTrack);
+            dispatch(updateQueue(index));
           }
         }
       }
@@ -599,7 +618,7 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
     return () => {
       track?.off("end", handleEnd);
     };
-  }, [logDebug, repeat, queue, shuffle, playbackTrack, playlists, play, seek, stop]);
+  }, [logDebug, repeat, queue, shuffle, playbackTrack, playlists, play, seek, stop, dispatch]);
 
   useEffect(() => {
     const duration = trackRef.current?.duration() || 0;
