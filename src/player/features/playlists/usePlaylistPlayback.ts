@@ -355,6 +355,11 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
             }`,
           );
           applyNativeLoopRegion(howl, duration, "load");
+          // If playing was already true for this same track, PlaylistPlaybackSync
+          // won't re-fire after the dispatch (no state change) — call play directly.
+          const { playing: wasPlaying, track: prevTrack } =
+            store.getState().playlistPlayback;
+          const needsDirectPlay = wasPlaying && prevTrack?.id === track.id;
           dispatch(
             playTrack({
               track,
@@ -362,6 +367,9 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
             })
           );
           howl.volume(store.getState().playlistPlayback.volume);
+          if (needsDirectPlay) {
+            howl.play();
+          }
           howl.on("play", () => {
             applyNativeLoopRegion(howl, duration, "play");
           });
