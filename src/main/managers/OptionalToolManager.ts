@@ -91,45 +91,45 @@ const BUILTIN_TOOL_RELEASES: Record<
   {
     "yt-dlp": {
       "darwin-arm64": {
-        version: "2026.02.21",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp_macos",
+        version: "2026.03.17",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_macos",
         sha256:
-          "13dc66e13e87c187e16bf0def71b35f118bc06145907739d5549d213a9e3b9e5",
+          "e80c47b3ce712acee51d5e3d4eace2d181b44d38f1942c3a32e3c7ff53cd9ed5",
         binaryName: "yt-dlp",
       },
       "darwin-x64": {
-        version: "2026.02.21",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp_macos",
+        version: "2026.03.17",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_macos",
         sha256:
-          "13dc66e13e87c187e16bf0def71b35f118bc06145907739d5549d213a9e3b9e5",
+          "e80c47b3ce712acee51d5e3d4eace2d181b44d38f1942c3a32e3c7ff53cd9ed5",
         binaryName: "yt-dlp",
       },
       "linux-x64": {
-        version: "2026.02.21",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp_linux",
+        version: "2026.03.17",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_linux",
         sha256:
-          "057098b1390e8d4931e143eb889e9bbe088f17e40a2936f31ee218909f806f5f",
+          "c2b0189f581fe4a2ddd41954f1bcb7d327db04b07ed0dea97e4f1b3e09b5dd8e",
         binaryName: "yt-dlp",
       },
       "linux-arm64": {
-        version: "2026.02.21",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp_linux_aarch64",
+        version: "2026.03.17",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_linux_aarch64",
         sha256:
-          "7571d3a9bb1ef31a490cd33c37341002006748078ed4d7fa617b0b6ce495f965",
+          "6bfa19736181da9e2e066f9c767da2f24fdcc5e148fa5034d1feb09132f89ad5",
         binaryName: "yt-dlp",
       },
       "win32-x64": {
-        version: "2026.02.21",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp.exe",
+        version: "2026.03.17",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp.exe",
         sha256:
-          "72a91fe064d5758c976e94f877c24369477dd3e395614b5b270dd5400a035ffa",
+          "3db811b366b2da47337d2fcfdfe5bbd9a258dad3f350c54974f005df115a1545",
         binaryName: "yt-dlp.exe",
       },
       "win32-arm64": {
-        version: "2026.02.21",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.21/yt-dlp_arm64.exe",
+        version: "2026.03.17",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_arm64.exe",
         sha256:
-          "17771a25b11af4bc8324de006b39fde7ff62deb8a95bf9000a182769f7b0450b",
+          "6cfba1af5147da0196d8c015961b1422bdd47fc2f9bb6df8cb4d1dc029939c51",
         binaryName: "yt-dlp.exe",
       },
     },
@@ -211,7 +211,7 @@ export class OptionalToolManager {
   }
 
   async getLoopPoints(trackPath: string): Promise<LoopPointsResult> {
-    return this.runPyMusicLooperJSON<LoopPointsResult>([
+    return this.runPyMusicLooper<LoopPointsResult>([
       "loop-points",
       "--path",
       trackPath,
@@ -219,7 +219,7 @@ export class OptionalToolManager {
   }
 
   async readLoopTags(trackPath: string): Promise<LoopTagsResult> {
-    return this.runPyMusicLooperJSON<LoopTagsResult>([
+    return this.runPyMusicLooper<LoopTagsResult>([
       "tag-read",
       "--path",
       trackPath,
@@ -231,7 +231,7 @@ export class OptionalToolManager {
     start: number,
     end: number,
   ): Promise<LoopTagsResult> {
-    return this.runPyMusicLooperJSON<LoopTagsResult>([
+    return this.runPyMusicLooper<LoopTagsResult>([
       "tag-write",
       "--path",
       trackPath,
@@ -242,7 +242,7 @@ export class OptionalToolManager {
     ]);
   }
 
-  private async runPyMusicLooperJSON<T>(args: string[]): Promise<T> {
+  private async runPyMusicLooper<T>(args: string[]): Promise<T> {
     let binaryPath: string;
     try {
       binaryPath = await this.ensureToolInstalled("pymusiclooper");
@@ -407,31 +407,37 @@ export class OptionalToolManager {
   private async resolveBundledToolPath(tool: ToolName): Promise<string | null> {
     const platformKey = this.getPlatformKey();
     const binaryName = this.getBundledBinaryName(tool);
-    const candidates = [
-      path.join(process.resourcesPath, "tools", platformKey, binaryName),
-      path.join(process.resourcesPath, "tools", binaryName),
-      path.join(process.resourcesPath, ".bundled-tools", platformKey, binaryName),
-      path.join(process.resourcesPath, ".bundled-tools", binaryName),
-      path.join(app.getAppPath(), "resources", "tools", platformKey, binaryName),
-      path.join(app.getAppPath(), "resources", "tools", binaryName),
-      path.join(
-        app.getAppPath(),
-        "resources",
-        ".bundled-tools",
-        platformKey,
-        binaryName,
-      ),
-      path.join(app.getAppPath(), "resources", ".bundled-tools", binaryName),
-      path.join(app.getAppPath(), "tools", platformKey, binaryName),
-      path.join(app.getAppPath(), "tools", binaryName),
-      path.join(app.getAppPath(), ".bundled-tools", platformKey, binaryName),
-      path.join(app.getAppPath(), ".bundled-tools", binaryName),
+    // Directory name used by PyInstaller onedir mode (no .exe suffix).
+    const bundleDirName = binaryName.replace(/\.exe$/i, "");
+
+    // Base directories to search under, in priority order.
+    const searchBases = [
+      path.join(process.resourcesPath, "tools", platformKey),
+      path.join(process.resourcesPath, "tools"),
+      path.join(process.resourcesPath, ".bundled-tools", platformKey),
+      path.join(process.resourcesPath, ".bundled-tools"),
+      path.join(app.getAppPath(), "resources", "tools", platformKey),
+      path.join(app.getAppPath(), "resources", "tools"),
+      path.join(app.getAppPath(), "resources", ".bundled-tools", platformKey),
+      path.join(app.getAppPath(), "resources", ".bundled-tools"),
+      path.join(app.getAppPath(), "tools", platformKey),
+      path.join(app.getAppPath(), "tools"),
+      path.join(app.getAppPath(), ".bundled-tools", platformKey),
+      path.join(app.getAppPath(), ".bundled-tools"),
     ];
 
-    for (const candidate of candidates) {
-      if (await this.exists(candidate)) {
-        await fs.chmod(candidate, 0o755).catch((_error: unknown): void => {});
-        return candidate;
+    for (const base of searchBases) {
+      // onedir: <base>/<bundleDirName>/<binaryName>
+      const onedirExe = path.join(base, bundleDirName, binaryName);
+      if (await this.exists(onedirExe)) {
+        await fs.chmod(onedirExe, 0o755).catch((_error: unknown): void => {});
+        return onedirExe;
+      }
+      // onefile (legacy): <base>/<binaryName>
+      const onefile = path.join(base, binaryName);
+      if (await this.exists(onefile)) {
+        await fs.chmod(onefile, 0o755).catch((_error: unknown): void => {});
+        return onefile;
       }
     }
 
@@ -449,6 +455,37 @@ export class OptionalToolManager {
 
     const platformKey = this.getPlatformKey();
     const binaryName = this.getBundledBinaryName(tool);
+    const bundleDirName = binaryName.replace(/\.exe$/i, "");
+
+    // Detect onedir: resolveBundledToolPath returns <bundle-dir>/<binaryName>,
+    // so the immediate parent directory name equals bundleDirName.
+    const isOnedir = path.basename(path.dirname(sourcePath)) === bundleDirName;
+
+    if (isOnedir) {
+      const sourceDir = path.dirname(sourcePath);
+      const stagedDirName = `${tool}-bundled-${app.getVersion()}-${platformKey}`;
+      const stagedDir = path.join(this.binDir, stagedDirName);
+      const stagedExePath = path.join(stagedDir, binaryName);
+
+      if (!(await this.exists(stagedExePath))) {
+        await fs.mkdir(this.binDir, { recursive: true });
+        await fs.mkdir(this.tempDir, { recursive: true });
+        const tempDir = path.join(
+          this.tempDir,
+          `${stagedDirName}-${Date.now()}.tmp`,
+        );
+        await fs.cp(sourceDir, tempDir, { recursive: true });
+        await fs.chmod(path.join(tempDir, binaryName), 0o755).catch((_error: unknown): void => {});
+        await fs.rename(tempDir, stagedDir);
+      } else {
+        await fs.chmod(stagedExePath, 0o755).catch((_error: unknown): void => {});
+      }
+
+      this.bundledToolPathCache.set(tool, stagedExePath);
+      return stagedExePath;
+    }
+
+    // onefile (legacy single-file binary)
     const stagedBinaryName = `${tool}-bundled-${app.getVersion()}-${platformKey}-${binaryName}`;
     const stagedPath = path.join(this.binDir, stagedBinaryName);
 
