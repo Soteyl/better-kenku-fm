@@ -18,6 +18,7 @@ import Loop from "@mui/icons-material/AllInclusiveRounded";
 import Next from "@mui/icons-material/SkipNextRounded";
 import Previous from "@mui/icons-material/SkipPreviousRounded";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import Tooltip from "@mui/material/Tooltip";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
@@ -139,6 +140,10 @@ function Controls({
   const loopEnabled = useSelector(
     (state: RootState) => state.playlistPlayback.loopEnabled,
   );
+  const duration = useSelector(
+    (state: RootState) => state.playlistPlayback.playback?.duration ?? 0,
+  );
+  const loopDisabledByDuration = duration > 30 * 60;
 
   function handlePlay() {
     dispatch(playPause(!playing));
@@ -205,12 +210,23 @@ function Controls({
       >
         <Next />
       </IconButton>
-      <IconButton
-        aria-label={loopEnabled ? "loop enabled" : "loop disabled"}
-        onClick={handleLoopToggle}
+      <Tooltip
+        title={
+          loopDisabledByDuration
+            ? "Loop is unavailable for tracks longer than 30 minutes"
+            : ""
+        }
       >
-        <Loop color={loopEnabled ? "primary" : undefined} />
-      </IconButton>
+        <span>
+          <IconButton
+            aria-label={loopEnabled ? "loop enabled" : "loop disabled"}
+            onClick={handleLoopToggle}
+            disabled={loopDisabledByDuration}
+          >
+            <Loop color={loopEnabled && !loopDisabledByDuration ? "primary" : undefined} />
+          </IconButton>
+        </span>
+      </Tooltip>
       <IconButton aria-label={`repeat ${playbackRepeat}`} onClick={handlRepeat}>
         {playbackRepeat === "off" ? (
           <RepeatIcon />
