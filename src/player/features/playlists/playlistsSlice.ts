@@ -4,6 +4,8 @@ export interface Track {
   id: string;
   url: string;
   title: string;
+  background?: string;
+  backgroundPosition?: number;
   loopStart?: number;
   loopEnd?: number;
   loopSource?: "analysis" | "tags" | "manual";

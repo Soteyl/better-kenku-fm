@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -26,16 +26,77 @@ const ImageListButton = styled("img")({
   borderRadius: "16px",
 });
 
+const MIME_EXTENSIONS: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/bmp": "bmp",
+  "image/svg+xml": "svg",
+};
+
 type ImageSelectorProps = {
   value: string;
   onChange: (value: string) => void;
+  customOnly?: boolean;
+  position?: number;
+  onPositionChange?: (value: number) => void;
 };
 
-export function ImageSelector({ value, onChange }: ImageSelectorProps) {
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
+
+export function ImageSelector({
+  value,
+  onChange,
+  customOnly = false,
+  position = 50,
+  onPositionChange,
+}: ImageSelectorProps) {
   const hasCustomImage = value.startsWith("file") || value.startsWith("http");
   const [imageType, setImageType] = useState(
-    hasCustomImage ? "custom" : "default"
+    customOnly || hasCustomImage ? "custom" : "default"
   );
+
+  // Drag-to-reposition state for the track-shaped preview
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ startY: number; startPos: number; height: number }>({
+    startY: 0,
+    startPos: position,
+    height: 96,
+  });
+
+  function handlePositionPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (!onPositionChange) {
+      return;
+    }
+    event.preventDefault();
+    dragRef.current = {
+      startY: event.clientY,
+      startPos: position,
+      height: event.currentTarget.getBoundingClientRect().height || 96,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDragging(true);
+  }
+
+  function handlePositionPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    if (!dragging || !onPositionChange) {
+      return;
+    }
+    const { startY, startPos, height } = dragRef.current;
+    const deltaY = event.clientY - startY;
+    // Dragging up reveals the lower part of the image → position increases
+    const next = clamp(startPos - (deltaY / height) * 100, 0, 100);
+    onPositionChange(Math.round(next));
+  }
+
+  function handlePositionPointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setDragging(false);
+  }
 
   const onDrop = useCallback((acceptedFiles: FileInfo[]) => {
     const file = acceptedFiles[0];
@@ -43,6 +104,50 @@ export function ImageSelector({ value, onChange }: ImageSelectorProps) {
       onChange(encodeFilePath(file.path));
     }
   }, []);
+
+  // Handle pasting an image (Ctrl/Cmd+V) while this selector is mounted
+  useEffect(() => {
+    async function handlePaste(event: ClipboardEvent) {
+      const clipboard = event.clipboardData;
+      if (!clipboard) {
+        return;
+      }
+
+      // A file copied from the OS file manager keeps a filesystem path
+      const pastedFile = clipboard.files[0];
+      if (pastedFile && pastedFile.type.startsWith("image/")) {
+        event.preventDefault();
+        const path = window.player.getPathForFile(pastedFile);
+        if (path) {
+          onChange(encodeFilePath(path));
+          setImageType("custom");
+          return;
+        }
+      }
+
+      // Raw image data (e.g. a screenshot) has no path, so persist it to disk
+      const imageItem = Array.from(clipboard.items).find((item) =>
+        item.type.startsWith("image/")
+      );
+      if (imageItem) {
+        event.preventDefault();
+        const blob = imageItem.getAsFile();
+        if (!blob) {
+          return;
+        }
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        const ext = MIME_EXTENSIONS[blob.type] ?? "png";
+        const savedPath = await window.player.saveImageData(bytes, ext);
+        onChange(encodeFilePath(savedPath));
+        setImageType("custom");
+      }
+    }
+
+    document.addEventListener("paste", handlePaste);
+    return () => {
+      document.removeEventListener("paste", handlePaste);
+    };
+  }, [onChange]);
 
   const { rootProps, inputProps, isDragging } = useFileDrop({
     onDrop,
@@ -116,11 +221,69 @@ export function ImageSelector({ value, onChange }: ImageSelectorProps) {
           <Typography variant="caption">Drop the image here...</Typography>
         ) : (
           <Typography variant="caption">
-            Drag and drop or click to select an image
+            Drag &amp; drop, click, or paste (Ctrl/Cmd+V) an image
           </Typography>
         )}
       </Button>
-      {hasCustomImage && <ImageListButton src={value} alt="preview" />}
+      {hasCustomImage &&
+        (onPositionChange ? (
+          <Box>
+            <Box
+              onPointerDown={handlePositionPointerDown}
+              onPointerMove={handlePositionPointerMove}
+              onPointerUp={handlePositionPointerUp}
+              onPointerCancel={handlePositionPointerUp}
+              sx={{
+                position: "relative",
+                width: "100%",
+                height: "96px",
+                borderRadius: "16px",
+                overflow: "hidden",
+                touchAction: "none",
+                userSelect: "none",
+                cursor: dragging ? "grabbing" : "grab",
+                backgroundColor: "rgba(34, 38, 57, 0.8)",
+                backgroundImage: `url("${value}")`,
+                backgroundSize: "cover",
+                backgroundPosition: `center ${position}%`,
+              }}
+            >
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  pointerEvents: "none",
+                  backgroundImage:
+                    "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.25) 45%, rgba(0,0,0,0) 100%)",
+                }}
+              />
+              <Typography
+                variant="body1"
+                sx={{
+                  position: "absolute",
+                  left: 12,
+                  bottom: 8,
+                  right: 12,
+                  pointerEvents: "none",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+                }}
+              >
+                Track title
+              </Typography>
+            </Box>
+            <Typography
+              variant="caption"
+              sx={{ display: "block", mt: 0.5, opacity: 0.7 }}
+            >
+              Drag the image up or down to reposition
+            </Typography>
+          </Box>
+        ) : (
+          <ImageListButton src={value} alt="preview" />
+        ))}
     </Box>
   );
 
@@ -129,23 +292,25 @@ export function ImageSelector({ value, onChange }: ImageSelectorProps) {
       <InputLabel id="bg-image" shrink>
         Background Image
       </InputLabel>
-      <ToggleButtonGroup
-        color="primary"
-        value={imageType}
-        exclusive
-        fullWidth
-        size="small"
-        onChange={(_, value) => {
-          if (value) {
-            onChange("");
-            setImageType(value);
-          }
-        }}
-        aria-labelledby="bg-image"
-      >
-        <ToggleButton value="default">Default</ToggleButton>
-        <ToggleButton value="custom">Custom</ToggleButton>
-      </ToggleButtonGroup>
+      {!customOnly && (
+        <ToggleButtonGroup
+          color="primary"
+          value={imageType}
+          exclusive
+          fullWidth
+          size="small"
+          onChange={(_, value) => {
+            if (value) {
+              onChange("");
+              setImageType(value);
+            }
+          }}
+          aria-labelledby="bg-image"
+        >
+          <ToggleButton value="default">Default</ToggleButton>
+          <ToggleButton value="custom">Custom</ToggleButton>
+        </ToggleButtonGroup>
+      )}
       <Box
         sx={{
           maxWidth: 500,
@@ -159,7 +324,7 @@ export function ImageSelector({ value, onChange }: ImageSelectorProps) {
         }}
       >
         <Box sx={{ overflowY: "scroll", height: "100%" }}>
-          {imageType === "default" ? imageSelector : imageImporter}
+          {!customOnly && imageType === "default" ? imageSelector : imageImporter}
         </Box>
       </Box>
     </FormGroup>

@@ -14,6 +14,7 @@ import Divider from "@mui/material/Divider";
 import { useDispatch } from "react-redux";
 import { editTrack, Track } from "./playlistsSlice";
 import { AudioSelector } from "../../common/AudioSelector";
+import { ImageSelector } from "../../common/ImageSelector";
 import { resolveLocalTrackPath } from "./trackUtils";
 
 type TrackSettingsProps = {
@@ -293,6 +294,17 @@ export function TrackSettings({ track, open, onClose }: TrackSettingsProps) {
             }}
             value={track.title}
             onChange={handleTitleChange}
+          />
+          <ImageSelector
+            customOnly
+            value={track.background ?? ""}
+            onChange={(background) =>
+              dispatch(editTrack({ id: track.id, background }))
+            }
+            position={track.backgroundPosition ?? 50}
+            onPositionChange={(backgroundPosition) =>
+              dispatch(editTrack({ id: track.id, backgroundPosition }))
+            }
           />
           <Divider sx={{ my: 2 }} />
           <Typography variant="subtitle2" sx={{ mb: 1 }}>

@@ -120,6 +120,13 @@ const api = {
       end,
     ) as Promise<LoopTagsResult>;
   },
+  saveImageData: (data: Uint8Array, ext: string) => {
+    return ipcRenderer.invoke(
+      "PLAYER_SAVE_IMAGE",
+      data,
+      ext,
+    ) as Promise<string>;
+  },
   debugLog: (message: string) => {
     ipcRenderer.send("PLAYER_DEBUG_LOG", message);
   },

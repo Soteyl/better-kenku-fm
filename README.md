@@ -17,9 +17,23 @@ This repository is a fork of Kenku FM with additional features and release autom
   - Timeline loop-region preview and loop analysis status in player UI.
   - Seamless in-player loop wrapping once loop points are available.
   - Non-blocking loop tag persistence after analysis.
+- Per-track background artwork in playlists:
+  - Give each track its own cover image — pick a file, drag & drop, paste with `Ctrl`/`Cmd`+`V`, or enter a URL.
+  - Drag the image up/down to adjust its vertical framing.
+  - Track rows are larger and show the artwork behind a bottom gradient with a shadowed, always-readable title.
 
 <p align="center">
   <img src="./docs/loop-preview.png" alt="Smart loop preview in Kenku FM" width="1000">
+</p>
+
+<p align="center">
+  <img src="./docs/track-backgrounds.jpg" alt="Playlist tracks with per-track background images" width="1000">
+</p>
+
+<p align="center"><em>Before — plain text track list:</em></p>
+
+<p align="center">
+  <img src="./docs/track-backgrounds-before.jpg" alt="Playlist track list before background images" width="1000">
 </p>
 
 ## Release Tag Rules (Fork)

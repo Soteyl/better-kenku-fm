@@ -1,6 +1,7 @@
 import { ipcMain, BrowserWindow, webContents, app } from "electron";
 import Fastify, { FastifyInstance } from "fastify";
-import { appendFile, mkdir } from "fs/promises";
+import { appendFile, mkdir, writeFile } from "fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "path";
 import { registerRemote } from "../remote";
 import {
@@ -32,6 +33,7 @@ export class PlayerManager {
     ipcMain.handle("PLAYER_GET_LOOP_POINTS", this._handleGetLoopPoints);
     ipcMain.handle("PLAYER_READ_LOOP_TAGS", this._handleReadLoopTags);
     ipcMain.handle("PLAYER_WRITE_LOOP_TAGS", this._handleWriteLoopTags);
+    ipcMain.handle("PLAYER_SAVE_IMAGE", this._handleSaveImage);
     ipcMain.on("PLAYER_DEBUG_LOG", this._handleDebugLog);
     ipcMain.on("PLAYER_FORCE_QUIT", this._handleForceQuit);
   }
@@ -46,6 +48,7 @@ export class PlayerManager {
     ipcMain.removeHandler("PLAYER_GET_LOOP_POINTS");
     ipcMain.removeHandler("PLAYER_READ_LOOP_TAGS");
     ipcMain.removeHandler("PLAYER_WRITE_LOOP_TAGS");
+    ipcMain.removeHandler("PLAYER_SAVE_IMAGE");
     ipcMain.off("PLAYER_DEBUG_LOG", this._handleDebugLog);
     ipcMain.off("PLAYER_FORCE_QUIT", this._handleForceQuit);
     this.stopRemote();
@@ -158,6 +161,19 @@ export class PlayerManager {
     end: number,
   ): Promise<LoopTagsResult> => {
     return this.toolManager.writeLoopTags(trackPath, start, end);
+  };
+
+  _handleSaveImage = async (
+    _: Electron.IpcMainInvokeEvent,
+    data: Uint8Array,
+    ext: string,
+  ): Promise<string> => {
+    const safeExt = /^[a-z0-9]+$/i.test(ext) ? ext.toLowerCase() : "png";
+    const dir = path.join(app.getPath("userData"), "track-images");
+    await mkdir(dir, { recursive: true });
+    const filePath = path.join(dir, `${randomUUID()}.${safeExt}`);
+    await writeFile(filePath, Buffer.from(data));
+    return filePath;
   };
 
   _handleDebugLog = async (

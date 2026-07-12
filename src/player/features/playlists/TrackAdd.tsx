@@ -15,6 +15,7 @@ import { v4 as uuid } from "uuid";
 import { useDispatch } from "react-redux";
 import { addTrack } from "./playlistsSlice";
 import { AudioSelector } from "../../common/AudioSelector";
+import { ImageSelector } from "../../common/ImageSelector";
 import { addTrackToQueueIfNeeded } from "./playlistPlaybackSlice";
 import { TrackSourceProgress } from "../../../types/player";
 
@@ -29,6 +30,8 @@ export function TrackAdd({ playlistId, open, onClose }: TrackAddProps) {
 
   const [title, setTitle] = useState("");
   const [url, setURL] = useState("");
+  const [background, setBackground] = useState("");
+  const [backgroundPosition, setBackgroundPosition] = useState(50);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<TrackSourceProgress | null>(null);
@@ -38,6 +41,8 @@ export function TrackAdd({ playlistId, open, onClose }: TrackAddProps) {
     if (!open) {
       setTitle("");
       setURL("");
+      setBackground("");
+      setBackgroundPosition(50);
       setError(null);
       setLoading(false);
       setProgress(null);
@@ -120,7 +125,13 @@ export function TrackAdd({ playlistId, open, onClose }: TrackAddProps) {
       const trackTitle = title || resolved.title || "Track";
       dispatch(
         addTrack({
-          track: { id: trackId, title: trackTitle, url: resolved.url },
+          track: {
+            id: trackId,
+            title: trackTitle,
+            url: resolved.url,
+            background: background || undefined,
+            backgroundPosition: background ? backgroundPosition : undefined,
+          },
           playlistId,
         }),
       );
@@ -191,6 +202,13 @@ export function TrackAdd({ playlistId, open, onClose }: TrackAddProps) {
             value={title}
             onChange={handleTitleChange}
             disabled={loading}
+          />
+          <ImageSelector
+            customOnly
+            value={background}
+            onChange={setBackground}
+            position={backgroundPosition}
+            onPositionChange={setBackgroundPosition}
           />
         </DialogContent>
         <DialogActions>
