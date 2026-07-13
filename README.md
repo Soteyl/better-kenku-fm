@@ -17,10 +17,16 @@ This repository is a fork of Kenku FM with additional features and release autom
   - Timeline loop-region preview and loop analysis status in player UI.
   - Seamless in-player loop wrapping once loop points are available.
   - Non-blocking loop tag persistence after analysis.
+  - Loop toggle auto-disabled for very long tracks (over 30 minutes).
 - Per-track background artwork in playlists:
   - Give each track its own cover image — pick a file, drag & drop, paste with `Ctrl`/`Cmd`+`V`, or enter a URL.
   - Drag the image up/down to adjust its vertical framing.
   - Track rows are larger and show the artwork behind a bottom gradient with a shadowed, always-readable title.
+- Track and playlist copy/paste workflow:
+  - Copy a track and paste it into any other playlist from the track's `⋯` menu.
+  - Duplicate a whole playlist (with all of its tracks) in one click; the copy opens automatically.
+  - Copy a track's file path or link, and reveal a local file in Finder/Explorer or open a web track in the browser.
+- Per-tab volume control: hover a browser tab's volume icon for a vertical slider (0–100%); clicking the icon still mutes/unmutes.
 
 <p align="center">
   <img src="./docs/loop-preview.png" alt="Smart loop preview in Kenku FM" width="1000">
