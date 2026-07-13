@@ -77,6 +77,10 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
   const fallbackEndTimerRef = useRef<number | null>(null);
   const playbackGenerationRef = useRef(0);
   const loopScheduleTimerRef = useRef<number | null>(null);
+  // Holds the latest track-end handler. Bound once per Howl in `play()` so that
+  // freshly created Howl instances always receive an `end` listener, even when
+  // the Redux `track` reference is unchanged (e.g. single-track repeat).
+  const handleEndRef = useRef<() => void>(() => {});
 
   const playlists = useSelector((state: RootState) => state.playlists);
   const store = useStore<RootState>();
@@ -432,6 +436,13 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
           error();
         });
 
+        // Bind the end handler per-Howl so every instance created by `play()`
+        // (initial play, single-track repeat, playlist-next) always dispatches
+        // to the latest handleEnd closure via the ref.
+        howl.on("end", () => {
+          handleEndRef.current();
+        });
+
         const sound = (howl as any)._sounds[0];
         if (!sound) {
           error();
@@ -549,9 +560,9 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
   }, [repeat, queue, shuffle, playbackTrack, playlists, seek, play, stop]);
 
   useEffect(() => {
-    const track = trackRef.current;
     // Move to next song or repeat this song on track end
     function handleEnd() {
+      const track = trackRef.current;
       const activeLoop = activeLoopRef.current;
       if (activeLoop) {
         // Backup only: manual-wrap should normally prevent end events.
@@ -622,10 +633,7 @@ export function usePlaylistPlayback(onError: (message: string) => void) {
         }
       }
     }
-    track?.on("end", handleEnd);
-    return () => {
-      track?.off("end", handleEnd);
-    };
+    handleEndRef.current = handleEnd;
   }, [logDebug, repeat, queue, shuffle, playbackTrack, playlists, play, seek, stop, dispatch]);
 
   useEffect(() => {
