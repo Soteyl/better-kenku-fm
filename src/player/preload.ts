@@ -127,6 +127,13 @@ const api = {
       ext,
     ) as Promise<string>;
   },
+  showItemInFolder: (fileUrl: string) => {
+    ipcRenderer.send("SHELL_SHOW_ITEM_IN_FOLDER", fileUrl);
+  },
+  openExternal: (url: string) => {
+    ipcRenderer.send("SHELL_OPEN_EXTERNAL", url);
+  },
+  platform: process.platform,
   debugLog: (message: string) => {
     ipcRenderer.send("PLAYER_DEBUG_LOG", message);
   },

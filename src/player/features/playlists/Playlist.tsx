@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
+import { v4 as uuid } from "uuid";
 
 import Add from "@mui/icons-material/AddCircleRounded";
 import Back from "@mui/icons-material/ChevronLeftRounded";
@@ -18,9 +19,19 @@ import Typography from "@mui/material/Typography";
 import { RootState } from "../../app/store";
 import { backgrounds, isBackground } from "../../backgrounds";
 import { useFolderDrop } from "../../common/useFolderDrop";
-import { addTracksToQueueIfNeeded, startQueue } from "./playlistPlaybackSlice";
+import {
+  addTrackToQueueIfNeeded,
+  addTracksToQueueIfNeeded,
+  startQueue,
+} from "./playlistPlaybackSlice";
 import { PlaylistSettings } from "./PlaylistSettings";
-import { addTracks, removePlaylist, Track } from "./playlistsSlice";
+import {
+  addPlaylist,
+  addTrack,
+  addTracks,
+  removePlaylist,
+  Track,
+} from "./playlistsSlice";
 import { PlaylistTracks } from "./PlaylistTracks";
 import { TrackAdd } from "./TrackAdd";
 
@@ -32,6 +43,9 @@ export function Playlist({ onPlay }: PlaylistProps) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const playlists = useSelector((state: RootState) => state.playlists);
+  const clipboardTrack = useSelector(
+    (state: RootState) => state.trackClipboard.track,
+  );
   const { playlistId } = useParams();
   const playlist = playlists.playlists.byId[playlistId];
 
@@ -66,6 +80,40 @@ export function Playlist({ onPlay }: PlaylistProps) {
   function handleDelete() {
     dispatch(removePlaylist(playlist.id));
     navigate(-1);
+    handleMenuClose();
+  }
+
+  function handleDuplicate() {
+    const newId = uuid();
+    const newTracks: Track[] = playlist.tracks.map((id) => ({
+      ...playlists.tracks[id],
+      id: uuid(),
+    }));
+    dispatch(
+      addPlaylist({
+        id: newId,
+        title: `${playlist.title} (Copy)`,
+        background: playlist.background,
+        tracks: [],
+      }),
+    );
+    dispatch(addTracks({ tracks: newTracks, playlistId: newId }));
+    handleMenuClose();
+    navigate(`/playlists/${newId}`);
+  }
+
+  function handlePaste() {
+    if (!clipboardTrack) {
+      return;
+    }
+    const trackId = uuid();
+    dispatch(
+      addTrack({
+        track: { ...clipboardTrack, id: trackId },
+        playlistId: playlist.id,
+      }),
+    );
+    dispatch(addTrackToQueueIfNeeded({ playlistId: playlist.id, trackId }));
     handleMenuClose();
   }
 
@@ -178,6 +226,10 @@ export function Playlist({ onPlay }: PlaylistProps) {
         }}
       >
         <MenuItem onClick={handleEdit}>Edit</MenuItem>
+        <MenuItem onClick={handleDuplicate}>Duplicate</MenuItem>
+        <MenuItem onClick={handlePaste} disabled={!clipboardTrack}>
+          Paste Track
+        </MenuItem>
         <MenuItem onClick={handleCopyID}>Copy ID</MenuItem>
         <MenuItem onClick={handleDelete}>Delete</MenuItem>
       </Menu>
