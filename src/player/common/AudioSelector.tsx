@@ -80,7 +80,7 @@ export function AudioSelector({
           youtube ? (
             <>
               YouTube link detected. Kenku will try to download audio from this
-              video using bundled yt-dlp/ffmpeg tools.
+              video using the bundled yt-dlp tool.
             </>
           ) : warning ? (
             <>

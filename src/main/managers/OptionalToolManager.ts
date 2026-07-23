@@ -8,7 +8,7 @@ import { pathToFileURL } from "url";
 import { spawn } from "child_process";
 import { isYoutubeURL } from "../../shared/youtubeUtils";
 
-type ToolName = "yt-dlp" | "ffmpeg" | "pymusiclooper";
+type ToolName = "yt-dlp" | "pymusiclooper";
 type ToolSourceType = "direct" | "youtube";
 type PlatformKey = `${NodeJS.Platform}-${NodeJS.Architecture}`;
 
@@ -91,49 +91,48 @@ const BUILTIN_TOOL_RELEASES: Record<
   {
     "yt-dlp": {
       "darwin-arm64": {
-        version: "2026.03.17",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_macos",
+        version: "2026.07.04",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_macos",
         sha256:
-          "e80c47b3ce712acee51d5e3d4eace2d181b44d38f1942c3a32e3c7ff53cd9ed5",
+          "498bd0dae17855c599d371d68ec5bafc439a9d8640e838be25c765a9792f261b",
         binaryName: "yt-dlp",
       },
       "darwin-x64": {
-        version: "2026.03.17",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_macos",
+        version: "2026.07.04",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_macos",
         sha256:
-          "e80c47b3ce712acee51d5e3d4eace2d181b44d38f1942c3a32e3c7ff53cd9ed5",
+          "498bd0dae17855c599d371d68ec5bafc439a9d8640e838be25c765a9792f261b",
         binaryName: "yt-dlp",
       },
       "linux-x64": {
-        version: "2026.03.17",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_linux",
+        version: "2026.07.04",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_linux",
         sha256:
-          "c2b0189f581fe4a2ddd41954f1bcb7d327db04b07ed0dea97e4f1b3e09b5dd8e",
+          "6bbb3d314cde4febe36e5fa1d55462e29c974f63444e707871834f6d8cc210ae",
         binaryName: "yt-dlp",
       },
       "linux-arm64": {
-        version: "2026.03.17",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_linux_aarch64",
+        version: "2026.07.04",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_linux_aarch64",
         sha256:
-          "6bfa19736181da9e2e066f9c767da2f24fdcc5e148fa5034d1feb09132f89ad5",
+          "b6ce97646773070d7a7ffd6bbbdcaecb47c48483909c54c915bf08a7a9b5e0b1",
         binaryName: "yt-dlp",
       },
       "win32-x64": {
-        version: "2026.03.17",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp.exe",
+        version: "2026.07.04",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp.exe",
         sha256:
-          "3db811b366b2da47337d2fcfdfe5bbd9a258dad3f350c54974f005df115a1545",
+          "52fe3c26dcf71fbdc85b528589020bb0b8e383155cfa81b64dd447bbe35e24b8",
         binaryName: "yt-dlp.exe",
       },
       "win32-arm64": {
-        version: "2026.03.17",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_arm64.exe",
+        version: "2026.07.04",
+        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_arm64.exe",
         sha256:
-          "6cfba1af5147da0196d8c015961b1422bdd47fc2f9bb6df8cb4d1dc029939c51",
+          "1525690b037ecc0bb677e38e7147b0025179cbc9a8d0c57264e3100b18099280",
         binaryName: "yt-dlp.exe",
       },
     },
-    ffmpeg: {},
     pymusiclooper: {},
   };
 
@@ -655,7 +654,7 @@ export class OptionalToolManager {
       "--progress-template",
       "download:%(progress)j",
       "-f",
-      "bestaudio[ext=m4a]/bestaudio",
+      "bestaudio[ext=m4a]/bestaudio/best",
       "-P",
       targetDir,
       "-o",
