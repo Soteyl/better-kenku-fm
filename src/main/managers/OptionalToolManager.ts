@@ -91,45 +91,45 @@ const BUILTIN_TOOL_RELEASES: Record<
   {
     "yt-dlp": {
       "darwin-arm64": {
-        version: "2026.07.04",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_macos",
+        version: "2026.08.16.020253",
+        url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp_macos",
         sha256:
-          "498bd0dae17855c599d371d68ec5bafc439a9d8640e838be25c765a9792f261b",
+          "d80072ab784fb88050fc16ad0c3ce94f6384b892ad0705f9fbbf66e5bb8fe8eb",
         binaryName: "yt-dlp",
       },
       "darwin-x64": {
-        version: "2026.07.04",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_macos",
+        version: "2026.08.16.020253",
+        url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp_macos",
         sha256:
-          "498bd0dae17855c599d371d68ec5bafc439a9d8640e838be25c765a9792f261b",
+          "d80072ab784fb88050fc16ad0c3ce94f6384b892ad0705f9fbbf66e5bb8fe8eb",
         binaryName: "yt-dlp",
       },
       "linux-x64": {
-        version: "2026.07.04",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_linux",
+        version: "2026.08.16.020253",
+        url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp_linux",
         sha256:
-          "6bbb3d314cde4febe36e5fa1d55462e29c974f63444e707871834f6d8cc210ae",
+          "db8835cfe127010bbbbd4cbec8791951e8d6c8fc3f3e85b096d4d6ef7d8711a0",
         binaryName: "yt-dlp",
       },
       "linux-arm64": {
-        version: "2026.07.04",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_linux_aarch64",
+        version: "2026.08.16.020253",
+        url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp_linux_aarch64",
         sha256:
-          "b6ce97646773070d7a7ffd6bbbdcaecb47c48483909c54c915bf08a7a9b5e0b1",
+          "fc2a3c79409c10e5296a37c573ca4ce3bfb046e114d45fe06f4922dcfea0dd0d",
         binaryName: "yt-dlp",
       },
       "win32-x64": {
-        version: "2026.07.04",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp.exe",
+        version: "2026.08.16.020253",
+        url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp.exe",
         sha256:
-          "52fe3c26dcf71fbdc85b528589020bb0b8e383155cfa81b64dd447bbe35e24b8",
+          "0b6734e904f7e2f77103658c7bccb6fc90b3653f40ab47278ac6314493fdba85",
         binaryName: "yt-dlp.exe",
       },
       "win32-arm64": {
-        version: "2026.07.04",
-        url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_arm64.exe",
+        version: "2026.08.16.020253",
+        url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp_arm64.exe",
         sha256:
-          "1525690b037ecc0bb677e38e7147b0025179cbc9a8d0c57264e3100b18099280",
+          "843a8cb420240d0f016ccedbd8ee401a9bbd81ce1bd3505592fd942c32e5af31",
         binaryName: "yt-dlp.exe",
       },
     },
@@ -456,13 +456,18 @@ export class OptionalToolManager {
     const binaryName = this.getBundledBinaryName(tool);
     const bundleDirName = binaryName.replace(/\.exe$/i, "");
 
+    // Key the staged copy on the bundled binary's content, not app.getVersion():
+    // fork releases keep package.json pinned at 1.5.5, so a version-based name
+    // would pin the staged copy to whatever shipped first and never refresh it.
+    const sourceStamp = (await this.sha256(sourcePath)).slice(0, 16);
+
     // Detect onedir: resolveBundledToolPath returns <bundle-dir>/<binaryName>,
     // so the immediate parent directory name equals bundleDirName.
     const isOnedir = path.basename(path.dirname(sourcePath)) === bundleDirName;
 
     if (isOnedir) {
       const sourceDir = path.dirname(sourcePath);
-      const stagedDirName = `${tool}-bundled-${app.getVersion()}-${platformKey}`;
+      const stagedDirName = `${tool}-bundled-${sourceStamp}-${platformKey}`;
       const stagedDir = path.join(this.binDir, stagedDirName);
       const stagedExePath = path.join(stagedDir, binaryName);
 
@@ -480,12 +485,13 @@ export class OptionalToolManager {
         await fs.chmod(stagedExePath, 0o755).catch((_error: unknown): void => {});
       }
 
+      await this.pruneStaleStagedTools(tool, stagedDirName);
       this.bundledToolPathCache.set(tool, stagedExePath);
       return stagedExePath;
     }
 
     // onefile (legacy single-file binary)
-    const stagedBinaryName = `${tool}-bundled-${app.getVersion()}-${platformKey}-${binaryName}`;
+    const stagedBinaryName = `${tool}-bundled-${sourceStamp}-${platformKey}-${binaryName}`;
     const stagedPath = path.join(this.binDir, stagedBinaryName);
 
     if (!(await this.exists(stagedPath))) {
@@ -502,8 +508,34 @@ export class OptionalToolManager {
       await fs.chmod(stagedPath, 0o755).catch((_error: unknown): void => {});
     }
 
+    await this.pruneStaleStagedTools(tool, stagedBinaryName);
     this.bundledToolPathCache.set(tool, stagedPath);
     return stagedPath;
+  }
+
+  // Staged copies are content-addressed, so every upgrade leaves the previous
+  // one behind. Drop the older ones for this tool once the new one is in place.
+  private async pruneStaleStagedTools(
+    tool: ToolName,
+    keepName: string,
+  ): Promise<void> {
+    try {
+      const entries = await fs.readdir(this.binDir);
+      await Promise.all(
+        entries
+          .filter(
+            (entry) => entry.startsWith(`${tool}-bundled-`) && entry !== keepName,
+          )
+          .map((entry) =>
+            fs.rm(path.join(this.binDir, entry), {
+              recursive: true,
+              force: true,
+            }),
+          ),
+      );
+    } catch {
+      // Pruning is best-effort; a stale copy costs disk, not correctness.
+    }
   }
 
   private getRemoteManifestURL() {

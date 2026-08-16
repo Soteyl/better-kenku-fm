@@ -15,27 +15,27 @@ const defaultPyMusicLooperBaseURL =
 
 const ytDlpMap = {
   "darwin-arm64": {
-    url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_macos",
+    url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp_macos",
     name: "yt-dlp",
   },
   "darwin-x64": {
-    url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_macos",
+    url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp_macos",
     name: "yt-dlp",
   },
   "linux-x64": {
-    url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_linux",
+    url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp_linux",
     name: "yt-dlp",
   },
   "linux-arm64": {
-    url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_linux_aarch64",
+    url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp_linux_aarch64",
     name: "yt-dlp",
   },
   "win32-x64": {
-    url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp.exe",
+    url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp.exe",
     name: "yt-dlp.exe",
   },
   "win32-arm64": {
-    url: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp_arm64.exe",
+    url: "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.16.020253/yt-dlp_arm64.exe",
     name: "yt-dlp.exe",
   },
 };
