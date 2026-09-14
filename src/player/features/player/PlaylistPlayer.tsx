@@ -22,6 +22,7 @@ import Tooltip from "@mui/material/Tooltip";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../app/store";
+import { VolumeSlider } from "../../common/VolumeSlider";
 import {
   adjustVolume,
   playPause,
@@ -55,21 +56,6 @@ const TimeSlider = styled(Slider)({
   },
 });
 
-const VolumeSlider = styled(Slider)({
-  color: "#fff",
-  "& .MuiSlider-track": {
-    border: "none",
-  },
-  "& .MuiSlider-thumb": {
-    width: 24,
-    height: 24,
-    backgroundColor: "#fff",
-    "&:hover, &.Mui-focusVisible, &.Mui-active": {
-      boxShadow: "0 4px 8px rgba(0,0,0,0.4)",
-    },
-  },
-});
-
 const TinyText = styled(Typography)({
   fontSize: "0.75rem",
   opacity: 0.38,
@@ -96,7 +82,7 @@ function Title() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        width: large ? "30%" : "100%",
+        width: large ? "26%" : "100%",
         flexDirection: "column",
       }}
     >
@@ -249,13 +235,10 @@ function Volume() {
     (state: RootState) => state.playlistPlayback.volume,
   );
 
-  function handleVolumeChange(_: Event, value: number | number[]) {
-    dispatch(adjustVolume(value as number));
-    // TODO: handle value isArray
-    if (muted) {
-      if (!Array.isArray(value) && value > 0) {
-        dispatch(mute(false));
-      }
+  function handleVolumeChange(value: number) {
+    dispatch(adjustVolume(value));
+    if (muted && value > 0) {
+      dispatch(mute(false));
     }
   }
 
@@ -265,9 +248,9 @@ function Volume() {
 
   return (
     <Stack
-      spacing={2}
+      spacing={1}
       direction="row"
-      sx={{ mb: 1, px: 1, width: large ? "30%" : "100%" }}
+      sx={{ mb: 1, px: 0.5, width: large ? "36%" : "100%" }}
       alignItems="center"
     >
       <IconButton aria-label={muted ? "unmute" : "mute"} onClick={handleMute}>
@@ -275,11 +258,9 @@ function Volume() {
       </IconButton>
       <VolumeSlider
         aria-label="Volume"
-        value={muted ? 0 : volume}
-        step={0.01}
-        min={0}
-        max={1}
-        onChange={handleVolumeChange}
+        gain={muted ? 0 : volume}
+        onGainChange={handleVolumeChange}
+        wheelStep={0.02}
       />
       {!large && (
         <Box px={2} height="24px">

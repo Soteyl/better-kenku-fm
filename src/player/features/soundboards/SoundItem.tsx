@@ -13,13 +13,12 @@ import CardContent from "@mui/material/CardContent";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import Slider from "@mui/material/Slider";
 import Stack from "@mui/material/Stack";
-import styled from "@mui/material/styles/styled";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
 import { RootState } from "../../app/store";
+import { VolumeSlider } from "../../common/VolumeSlider";
 import { Sound, Soundboard, editSound, removeSound } from "./soundboardsSlice";
 import { SoundSettings } from "./SoundSettings";
 
@@ -29,21 +28,6 @@ type SoundItemProps = {
   onPlay: (sound: Sound) => void;
   onStop: (id: string) => void;
 };
-
-const VolumeSlider = styled(Slider)({
-  color: "#fff",
-  "& .MuiSlider-track": {
-    border: "none",
-  },
-  "& .MuiSlider-thumb": {
-    width: 24,
-    height: 24,
-    backgroundColor: "#fff",
-    "&:hover, &.Mui-focusVisible, &.Mui-active": {
-      boxShadow: "0 4px 8px rgba(0,0,0,0.4)",
-    },
-  },
-});
 
 export function SoundItem({ id, soundboard, onPlay, onStop }: SoundItemProps) {
   const sound = useSelector((state: RootState) => state.soundboards.sounds[id]);
@@ -86,8 +70,8 @@ export function SoundItem({ id, soundboard, onPlay, onStop }: SoundItemProps) {
     }
   }
 
-  function handleVolumeChange(_: Event, value: number | number[]) {
-    dispatch(editSound({ id: sound.id, volume: value as number }));
+  function handleVolumeChange(volume: number) {
+    dispatch(editSound({ id: sound.id, volume }));
   }
 
   function handleToggleLoop() {
@@ -116,11 +100,8 @@ export function SoundItem({ id, soundboard, onPlay, onStop }: SoundItemProps) {
         aria-label="Volume"
         // Prevent drag and drop when using slider
         onPointerDown={(e) => e.stopPropagation()}
-        onChange={handleVolumeChange}
-        value={sound.volume}
-        step={0.01}
-        min={0}
-        max={1}
+        gain={sound.volume}
+        onGainChange={handleVolumeChange}
       />
     </>
   );
